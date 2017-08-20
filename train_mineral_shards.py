@@ -28,7 +28,7 @@ def main():
       game_steps_per_episode=steps * step_mul) as env:
 
     model = deepq.models.cnn_to_mlp(
-      convs=[(3, 1, 1)],
+      convs=[(3, 3, 1)],
       hiddens=[256],
       dueling=True
     )
@@ -40,7 +40,7 @@ def main():
       lr=1e-4,
       max_timesteps=2000000,
       buffer_size=10000,
-      exploration_fraction=0.001,
+      exploration_fraction=0.1,
       exploration_final_eps=0.5,
       train_freq=4,
       learning_starts=10000,

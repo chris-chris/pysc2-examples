@@ -14,8 +14,12 @@ from baselines.deepq.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
 from pysc2.lib import actions as sc2_actions
 from pysc2.env import environment
+from pysc2.lib import features
+
 import gflags as flags
 from s2clientprotocol import sc2api_pb2
+
+_PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 
 _MOVE_SCREEN = sc2_actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = sc2_actions.FUNCTIONS.select_army.id
@@ -182,7 +186,7 @@ def learn(env,
   sess.__enter__()
 
   def make_obs_ph(name):
-    return U.BatchInput(env.observation_spec()["screen"], name=name)
+    return U.BatchInput((64, 64), name=name)
 
   act, train, update_target, debug = deepq.build_train(
     make_obs_ph=make_obs_ph,
@@ -224,7 +228,7 @@ def learn(env,
   # Select all marines first
   step_result = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
 
-  obs = obs[0].observation["screen"]
+  obs = obs[0].observation["screen"][_PLAYER_RELATIVE]
   reset = True
   with tempfile.TemporaryDirectory() as td:
     model_saved = False
@@ -255,12 +259,12 @@ def learn(env,
       action = act(np.array(obs)[None], update_eps=update_eps, **kwargs)[0]
       reset = False
 
-      print("action : %s Coord : %s" % (action, intToCoordinate(action, 64)))
+      #print("action : %s Coord : %s" % (action, intToCoordinate(action, 64)))
 
       new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, intToCoordinate(action, 64)])]
 
       step_result = env.step(actions=new_action)
-      new_obs = step_result[0].observation["screen"]
+      new_obs = step_result[0].observation["screen"][_PLAYER_RELATIVE]
       rew = step_result[0].reward
       done = step_result[0].step_type == environment.StepType.LAST
 
@@ -271,7 +275,7 @@ def learn(env,
       episode_rewards[-1] += rew
       if done:
         obs = env.reset()
-        obs = obs[0].observation["screen"]
+        obs = obs[0].observation["screen"][_PLAYER_RELATIVE]
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
         episode_rewards.append(0.0)
