@@ -20,6 +20,7 @@ import gflags as flags
 from s2clientprotocol import sc2api_pb2
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
+_PLAYER_NEUTRAL = 3  # beacon/minerals
 
 _MOVE_SCREEN = sc2_actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = sc2_actions.FUNCTIONS.select_army.id
@@ -228,7 +229,7 @@ def learn(env,
   # Select all marines first
   step_result = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
 
-  obs = obs[0].observation["screen"][_PLAYER_RELATIVE]
+  obs = obs[0].observation["screen"][_PLAYER_RELATIVE] == _PLAYER_NEUTRAL
   reset = True
   with tempfile.TemporaryDirectory() as td:
     model_saved = False
@@ -261,10 +262,10 @@ def learn(env,
 
       #print("action : %s Coord : %s" % (action, intToCoordinate(action, 64)))
 
-      new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, intToCoordinate(action, 64)])]
+      new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, intToCoordinate(action * 4, 64)])]
 
       step_result = env.step(actions=new_action)
-      new_obs = step_result[0].observation["screen"][_PLAYER_RELATIVE]
+      new_obs = step_result[0].observation["screen"][_PLAYER_RELATIVE] == _PLAYER_NEUTRAL
       rew = step_result[0].reward
       done = step_result[0].step_type == environment.StepType.LAST
 
@@ -275,7 +276,7 @@ def learn(env,
       episode_rewards[-1] += rew
       if done:
         obs = env.reset()
-        obs = obs[0].observation["screen"][_PLAYER_RELATIVE]
+        obs = obs[0].observation["screen"][_PLAYER_RELATIVE] == _PLAYER_NEUTRAL
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
         episode_rewards.append(0.0)

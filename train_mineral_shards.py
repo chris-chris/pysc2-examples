@@ -29,19 +29,19 @@ def main():
 
     model = deepq.models.cnn_to_mlp(
       convs=[(3, 3, 1)],
-      hiddens=[256],
+      hiddens=[64],
       dueling=True
     )
 
     act = sc2_deepq.learn(
       env,
       q_func=model,
-      num_actions=64 * 64,
+      num_actions=32*32,
       lr=1e-4,
       max_timesteps=2000000,
       buffer_size=10000,
       exploration_fraction=0.1,
-      exploration_final_eps=0.5,
+      exploration_final_eps=0.05,
       train_freq=4,
       learning_starts=10000,
       target_network_update_freq=1000,
