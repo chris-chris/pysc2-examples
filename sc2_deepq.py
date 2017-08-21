@@ -287,25 +287,27 @@ def learn(env,
       coord = [player[0], player[1]]
       rew = 0
 
+      path_memory_ = np.array(path_memory, copy=True)
       if(action == 0 and player[1] > 2): #UP
         coord = [player[0], player[1] - 3]
-        path_memory[player[0],  player[1] - 3 : player[1]] = -1
+        path_memory_[player[1] - 3 : player[1], player[0]] = -1
       elif(action == 1 and player[1] < 61): #DOWN
         coord = [player[0], player[1] + 3]
-        path_memory[player[0], player[1] : player[1] + 3] = -1
+        path_memory_[player[1] : player[1] + 3, player[0]] = -1
       elif(action == 2 and player[0] > 2): #LEFT
         coord = [player[0] - 3, player[1]]
-        path_memory[player[0] - 3 : player[0], player[1]] = -1
+        path_memory_[player[1], player[0] - 3 : player[0]] = -1
       elif(action == 3 and player[0] < 61): #RIGHT
         coord = [player[0] + 3, player[1]]
-        path_memory[player[0] : player[0] + 3, player[1]] = -1
+        path_memory_[player[1], player[0] : player[0] + 3] = -1
       else:
         #Cannot move, give minus reward
-        rew -= 0.2
+        rew -= 1
 
-      if(path_memory[coord[0],coord[1]] != 0):
-        rew -= 0.1
+      if(path_memory[coord[1],coord[0]] != 0):
+        rew -= 0.5
 
+      path_memory = np.array(path_memory_)
       #print("action : %s Coord : %s" % (action, coord))
 
       new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
