@@ -228,6 +228,7 @@ def learn(env,
   update_target()
 
   episode_rewards = [0.0]
+  episode_minerals = [0.0]
   saved_mean_reward = None
 
   path_memory = np.zeros((64,64))
@@ -288,21 +289,22 @@ def learn(env,
 
       if(action == 0 and player[1] > 2): #UP
         coord = [player[0], player[1] - 3]
+        path_memory[player[0],  player[1] - 3 : player[1]] = -1
       elif(action == 1 and player[1] < 61): #DOWN
         coord = [player[0], player[1] + 3]
+        path_memory[player[0], player[1] : player[1] + 3] = -1
       elif(action == 2 and player[0] > 2): #LEFT
         coord = [player[0] - 3, player[1]]
+        path_memory[player[0] - 3 : player[0], player[1]] = -1
       elif(action == 3 and player[0] < 61): #RIGHT
         coord = [player[0] + 3, player[1]]
+        path_memory[player[0] : player[0] + 3, player[1]] = -1
       else:
         #Cannot move, give minus reward
         rew -= 0.2
 
       if(path_memory[coord[0],coord[1]] != 0):
         rew -= 0.1
-
-      if(path_memory[coord[0],coord[1]] == 0):
-        path_memory[coord[0],coord[1]] = -1
 
       #print("action : %s Coord : %s" % (action, coord))
 
@@ -335,6 +337,8 @@ def learn(env,
       obs = new_obs
 
       episode_rewards[-1] += rew
+      episode_minerals[-1] += step_result[0].reward
+
       if done:
         obs = env.reset()
         player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
@@ -357,6 +361,7 @@ def learn(env,
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
         episode_rewards.append(0.0)
+        episode_minerals.append(0.0)
 
         path_memory = np.zeros((64,64))
 
@@ -380,11 +385,13 @@ def learn(env,
         update_target()
 
       mean_100ep_reward = round(np.mean(episode_rewards[-101:-1]), 1)
+      mean_100ep_mineral = round(np.mean(episode_minerals[-101:-1]), 1)
       num_episodes = len(episode_rewards)
       if done and print_freq is not None and len(episode_rewards) % print_freq == 0:
         logger.record_tabular("steps", t)
         logger.record_tabular("episodes", num_episodes)
         logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
+        logger.record_tabular("mean 100 episode mineral", mean_100ep_mineral)
         logger.record_tabular("% time spent exploring", int(100 * exploration.value(t)))
         logger.dump_tabular()
 
