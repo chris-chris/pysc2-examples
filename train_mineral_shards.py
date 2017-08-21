@@ -14,8 +14,8 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
-step_mul = 16
-steps = 200
+step_mul = 8
+steps = 400
 
 FLAGS = flags.FLAGS
 
@@ -28,7 +28,7 @@ def main():
       game_steps_per_episode=steps * step_mul) as env:
 
     model = deepq.models.cnn_to_mlp(
-      convs=[(16, 8, 2), (16, 4, 2), (16, 3, 1)],
+      convs=[(16, 8, 4), (16, 4, 2), (16, 3, 2)],
       hiddens=[256],
       dueling=True
     )
@@ -36,12 +36,12 @@ def main():
     act = sc2_deepq.learn(
       env,
       q_func=model,
-      num_actions=16*16,
+      num_actions=4,
       lr=1e-4,
       max_timesteps=2000000,
       buffer_size=10000,
       exploration_fraction=0.1,
-      exploration_final_eps=0.05,
+      exploration_final_eps=0.01,
       train_freq=4,
       learning_starts=10000,
       target_network_update_freq=1000,

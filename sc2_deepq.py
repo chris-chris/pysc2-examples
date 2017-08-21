@@ -15,17 +15,21 @@ from baselines.deepq.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 from pysc2.lib import actions as sc2_actions
 from pysc2.env import environment
 from pysc2.lib import features
+from pysc2.lib import actions
 
 import gflags as flags
 from s2clientprotocol import sc2api_pb2
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
+_PLAYER_FRIENDLY = 1
 _PLAYER_NEUTRAL = 3  # beacon/minerals
-
-_MOVE_SCREEN = sc2_actions.FUNCTIONS.Move_screen.id
-_SELECT_ARMY = sc2_actions.FUNCTIONS.select_army.id
-_SELECT_ALL = [0]
+_PLAYER_HOSTILE = 4
+_NO_OP = actions.FUNCTIONS.no_op.id
+_MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
+_ATTACK_SCREEN = actions.FUNCTIONS.Attack_screen.id
+_SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
+_SELECT_ALL = [0]
 
 FLAGS = flags.FLAGS
 
@@ -225,11 +229,30 @@ def learn(env,
 
   episode_rewards = [0.0]
   saved_mean_reward = None
+
+  path_memory = np.zeros((64,64))
+
   obs = env.reset()
   # Select all marines first
   step_result = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
 
-  obs = obs[0].observation["screen"][_PLAYER_RELATIVE] == _PLAYER_NEUTRAL
+  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+
+  obs = player_relative - path_memory
+
+  player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+  player = [int(player_x.mean()), int(player_y.mean())]
+
+  if(player[0]>32):
+    obs = shift(LEFT, player[0]-32, obs)
+  elif(player[0]<32):
+    obs = shift(RIGHT, 32 - player[0], obs)
+
+  if(player[1]>32):
+    obs = shift(UP, player[1]-32, obs)
+  elif(player[1]<32):
+    obs = shift(DOWN, 32 - player[1], obs)
+
   reset = True
   with tempfile.TemporaryDirectory() as td:
     model_saved = False
@@ -260,13 +283,51 @@ def learn(env,
       action = act(np.array(obs)[None], update_eps=update_eps, **kwargs)[0]
       reset = False
 
-      #print("action : %s Coord : %s" % (action, intToCoordinate(action, 64)))
+      coord = [player[0], player[1]]
+      rew = 0
 
-      new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, intToCoordinate(action * 4 * 4, 64)])]
+      if(action == 0 and player[1] > 2): #UP
+        coord = [player[0], player[1] - 3]
+      elif(action == 1 and player[1] < 61): #DOWN
+        coord = [player[0], player[1] + 3]
+      elif(action == 2 and player[0] > 2): #LEFT
+        coord = [player[0] - 3, player[1]]
+      elif(action == 3 and player[0] < 61): #RIGHT
+        coord = [player[0] + 3, player[1]]
+      else:
+        #Cannot move, give minus reward
+        rew -= 0.2
+
+      if(path_memory[coord[0],coord[1]] != 0):
+        rew -= 0.1
+
+      if(path_memory[coord[0],coord[1]] == 0):
+        path_memory[coord[0],coord[1]] = -1
+
+      #print("action : %s Coord : %s" % (action, coord))
+
+      new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
 
       step_result = env.step(actions=new_action)
-      new_obs = step_result[0].observation["screen"][_PLAYER_RELATIVE] == _PLAYER_NEUTRAL
-      rew = step_result[0].reward
+
+      player_relative = step_result[0].observation["screen"][_PLAYER_RELATIVE]
+      new_obs = player_relative - path_memory
+
+      player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+      player = [int(player_x.mean()), int(player_y.mean())]
+
+      if(player[0]>32):
+        new_obs = shift(LEFT, player[0]-32, new_obs)
+      elif(player[0]<32):
+        new_obs = shift(RIGHT, 32 - player[0], new_obs)
+
+      if(player[1]>32):
+        new_obs = shift(UP, player[1]-32, new_obs)
+      elif(player[1]<32):
+        new_obs = shift(DOWN, 32 - player[1], new_obs)
+
+      rew += step_result[0].reward
+
       done = step_result[0].step_type == environment.StepType.LAST
 
       # Store transition in the replay buffer.
@@ -276,10 +337,29 @@ def learn(env,
       episode_rewards[-1] += rew
       if done:
         obs = env.reset()
-        obs = obs[0].observation["screen"][_PLAYER_RELATIVE] == _PLAYER_NEUTRAL
+        player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+
+        obs = player_relative - path_memory
+
+        player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+        player = [int(player_x.mean()), int(player_y.mean())]
+
+        if(player[0]>32):
+          obs = shift(LEFT, player[0]-32, obs)
+        elif(player[0]<32):
+          obs = shift(RIGHT, 32 - player[0], obs)
+
+        if(player[1]>32):
+          obs = shift(UP, player[1]-32, obs)
+        elif(player[1]<32):
+          obs = shift(DOWN, 32 - player[1], obs)
+
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
         episode_rewards.append(0.0)
+
+        path_memory = np.zeros((64,64))
+
         reset = True
 
       if t > learning_starts and t % train_freq == 0:
@@ -330,3 +410,28 @@ def intToCoordinate(num, size=64):
   y = num // size
   x = num - size * y
   return [x, y]
+
+UP, DOWN, LEFT, RIGHT = 'up', 'down', 'left', 'right'
+
+def shift(direction, number, matrix):
+  ''' shift given 2D matrix in-place the given number of rows or columns
+      in the specified (UP, DOWN, LEFT, RIGHT) direction and return it
+  '''
+  if direction in (UP):
+    matrix = np.roll(matrix, -number, axis=0)
+    matrix[number:,:] = -2
+    return matrix
+  elif direction in (DOWN):
+    matrix = np.roll(matrix, number, axis=0)
+    matrix[:number,:] = -2
+    return matrix
+  elif direction in (LEFT):
+    matrix = np.roll(matrix, -number, axis=1)
+    matrix[:,number:] = -2
+    return matrix
+  elif direction in (RIGHT):
+    matrix = np.roll(matrix, number, axis=1)
+    matrix[:,:number] = -2
+    return matrix
+  else:
+    return matrix
