@@ -23,8 +23,8 @@ def main():
       game_steps_per_episode=steps * step_mul) as env:
 
     model = deepq.models.cnn_to_mlp(
-      convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
-      hiddens=[256],
+      convs=[(4, 8, 4), (2, 4, 2), (2, 3, 2)],
+      hiddens=[128],
       dueling=True
     )
 
@@ -37,7 +37,7 @@ def main():
       'num_actions': 64 * 64,
     }
 
-    act = sc2_deepq.load("sc2_mineral_shards.pkl", act_params=act_params)
+    act = sc2_deepq.load("sc2_mineral_shards_2mil.pkl", act_params=act_params)
 
     while True:
       obs, done = env.reset(), False

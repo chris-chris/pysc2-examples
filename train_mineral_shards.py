@@ -28,8 +28,8 @@ def main():
       game_steps_per_episode=steps * step_mul) as env:
 
     model = deepq.models.cnn_to_mlp(
-      convs=[(16, 8, 4), (16, 4, 2), (16, 3, 2)],
-      hiddens=[256],
+      convs=[(4, 8, 4), (2, 4, 2), (2, 3, 2)],
+      hiddens=[128],
       dueling=True
     )
 
