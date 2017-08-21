@@ -40,7 +40,7 @@ def main():
       lr=1e-4,
       max_timesteps=2000000,
       buffer_size=10000,
-      exploration_fraction=0.1,
+      exploration_fraction=1,
       exploration_final_eps=0.01,
       train_freq=4,
       learning_starts=10000,
