@@ -28,15 +28,15 @@ def main():
       game_steps_per_episode=steps * step_mul) as env:
 
     model = deepq.models.cnn_to_mlp(
-      convs=[(3, 3, 1)],
-      hiddens=[64],
+      convs=[(16, 8, 2), (16, 4, 2), (16, 3, 1)],
+      hiddens=[256],
       dueling=True
     )
 
     act = sc2_deepq.learn(
       env,
       q_func=model,
-      num_actions=32*32,
+      num_actions=16*16,
       lr=1e-4,
       max_timesteps=2000000,
       buffer_size=10000,

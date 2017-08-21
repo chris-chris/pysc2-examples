@@ -262,7 +262,7 @@ def learn(env,
 
       #print("action : %s Coord : %s" % (action, intToCoordinate(action, 64)))
 
-      new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, intToCoordinate(action * 4, 64)])]
+      new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, intToCoordinate(action * 4 * 4, 64)])]
 
       step_result = env.step(actions=new_action)
       new_obs = step_result[0].observation["screen"][_PLAYER_RELATIVE] == _PLAYER_NEUTRAL
