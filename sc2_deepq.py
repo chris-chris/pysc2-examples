@@ -330,7 +330,7 @@ def learn(env,
       elif(player[1]<32):
         new_obs = shift(DOWN, 32 - player[1], new_obs)
 
-      rew += step_result[0].reward
+      rew += step_result[0].reward * 10
 
       done = step_result[0].step_type == environment.StepType.LAST
 
