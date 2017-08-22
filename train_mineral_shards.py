@@ -14,7 +14,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
-step_mul = 8
+step_mul = 16
 steps = 400
 
 FLAGS = flags.FLAGS
@@ -28,7 +28,7 @@ def main():
       game_steps_per_episode=steps * step_mul) as env:
 
     model = deepq.models.cnn_to_mlp(
-      convs=[(4, 8, 4), (2, 4, 2), (2, 3, 2)],
+      convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
       hiddens=[128],
       dueling=True
     )
