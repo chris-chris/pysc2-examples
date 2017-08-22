@@ -9,3 +9,5 @@ This example program was built on
 
 ## Minimaps
 - CollectMineralShards with Deep Q Network
+
+![CollectMineralShards](https://media.giphy.com/media/UrgVK9TFfv2AE/giphy.gif "Collect Mineral")
