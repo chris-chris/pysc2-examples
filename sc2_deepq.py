@@ -288,18 +288,50 @@ def learn(env,
       rew = 0
 
       path_memory_ = np.array(path_memory, copy=True)
-      if(action == 0 and player[1] > 2): #UP
-        coord = [player[0], player[1] - 3]
-        path_memory_[player[1] - 3 : player[1], player[0]] = -1
-      elif(action == 1 and player[1] < 61): #DOWN
-        coord = [player[0], player[1] + 3]
-        path_memory_[player[1] : player[1] + 3, player[0]] = -1
-      elif(action == 2 and player[0] > 2): #LEFT
-        coord = [player[0] - 3, player[1]]
-        path_memory_[player[1], player[0] - 3 : player[0]] = -1
-      elif(action == 3 and player[0] < 61): #RIGHT
-        coord = [player[0] + 3, player[1]]
-        path_memory_[player[1], player[0] : player[0] + 3] = -1
+      if(action == 0): #UP
+
+        if(player[1] >= 16):
+          coord = [player[0], player[1] - 16]
+          path_memory_[player[1] - 16 : player[1], player[0]] = -1
+        elif(player[1] > 0):
+          coord = [player[0], 0]
+          path_memory_[0 : player[1], player[0]] = -1
+        else:
+          rew -= 1
+
+      elif(action == 1): #DOWN
+
+        if(player[1] <= 47):
+          coord = [player[0], player[1] + 16]
+          path_memory_[player[1] : player[1] + 16, player[0]] = -1
+        elif(player[1] > 47):
+          coord = [player[0], 63]
+          path_memory_[player[1] : 63, player[0]] = -1
+        else:
+          rew -= 1
+
+      elif(action == 2): #LEFT
+
+        if(player[0] >= 16):
+          coord = [player[0] - 16, player[1]]
+          path_memory_[player[1], player[0] - 16 : player[0]] = -1
+        elif(player[0] < 16):
+          coord = [0, player[1]]
+          path_memory_[player[1], 0 : player[0]] = -1
+        else:
+          rew -= 1
+
+      elif(action == 3): #RIGHT
+
+        if(player[0] <= 47):
+          coord = [player[0] + 16, player[1]]
+          path_memory_[player[1], player[0] : player[0] + 16] = -1
+        elif(player[0] > 47):
+          coord = [63, player[1]]
+          path_memory_[player[1], player[0] : 63] = -1
+        else:
+          rew -= 1
+
       else:
         #Cannot move, give minus reward
         rew -= 1
