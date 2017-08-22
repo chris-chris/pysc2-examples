@@ -38,7 +38,7 @@ def main():
       q_func=model,
       num_actions=4,
       lr=1e-4,
-      max_timesteps=2000000,
+      max_timesteps=20000000,
       buffer_size=10000,
       exploration_fraction=1,
       exploration_final_eps=0.01,
