@@ -4,6 +4,7 @@ This example program was built on
 - pysc2 (Deepmind) [https://github.com/deepmind/pysc2]
 - baselines (OpenAI) [https://github.com/openai/baselines]
 - s2client-proto (Blizzard) [https://github.com/Blizzard/s2client-proto]
+- Tensorflow 1.3 (Google) [https://github.com/tensorflow/tensorflow]
 
 # Current examples
 
