@@ -18,7 +18,6 @@ from pysc2.lib import features
 from pysc2.lib import actions
 
 import gflags as flags
-from s2clientprotocol import sc2api_pb2
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _PLAYER_FRIENDLY = 1
