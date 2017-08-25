@@ -95,7 +95,7 @@ def load(path, act_params, num_cpu=16):
 
 def learn(env,
           q_func,
-          num_actions=64*64,
+          num_actions=4,
           lr=5e-4,
           max_timesteps=100000,
           buffer_size=50000,

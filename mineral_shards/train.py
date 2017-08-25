@@ -1,20 +1,18 @@
-import sc2_deepq
-from baselines import deepq
+import sys
 
+import gflags as flags
+from baselines import deepq
 from pysc2.env import sc2_env
 from pysc2.lib import actions
 
-import gflags as flags
-import sys
-from s2clientprotocol import sc2api_pb2
-
+from mineral_shards import deepq_mineral_shards
 
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
-step_mul = 16
+step_mul = 8
 steps = 400
 
 FLAGS = flags.FLAGS
@@ -33,12 +31,12 @@ def main():
       dueling=True
     )
 
-    act = sc2_deepq.learn(
+    act = deepq_mineral_shards.learn(
       env,
       q_func=model,
       num_actions=4,
       lr=1e-5,
-      max_timesteps=20000000,
+      max_timesteps=2000000,
       buffer_size=100000,
       exploration_fraction=0.5,
       exploration_final_eps=0.01,
@@ -48,7 +46,7 @@ def main():
       gamma=0.99,
       prioritized_replay=True
     )
-    act.save("sc2_mineral_shards_20mil.pkl")
+    act.save("model.pkl")
 
 
 if __name__ == '__main__':

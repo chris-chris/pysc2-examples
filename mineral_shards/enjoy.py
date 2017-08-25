@@ -1,22 +1,16 @@
-import sc2_deepq
-
-from baselines import deepq
-
-import gflags as flags
 import sys
 
-import numpy as np
-
-from pysc2.env import sc2_env
-
 import baselines.common.tf_util as U
-
-from pysc2.lib import actions as sc2_actions
-from pysc2.env import environment
-from pysc2.lib import features
-from pysc2.lib import actions
-
 import gflags as flags
+import numpy as np
+from baselines import deepq
+from pysc2.env import environment
+from pysc2.env import sc2_env
+from pysc2.lib import actions
+from pysc2.lib import actions as sc2_actions
+from pysc2.lib import features
+
+from defeat_zerglings import deepq_defeat_zerglings
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _PLAYER_FRIENDLY = 1
@@ -29,7 +23,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
 
-step_mul = 16
+step_mul = 1
 steps = 400
 
 FLAGS = flags.FLAGS
@@ -57,7 +51,7 @@ def main():
       'num_actions': 4,
     }
 
-    act = sc2_deepq.load("sc2_mineral_shards_20mil.pkl", act_params=act_params)
+    act = deepq_defeat_zerglings.load("model.pkl", act_params=act_params)
 
     while True:
 
