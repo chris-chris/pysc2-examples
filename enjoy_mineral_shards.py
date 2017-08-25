@@ -10,7 +10,7 @@ from pysc2.lib import actions
 from pysc2.lib import actions as sc2_actions
 from pysc2.lib import features
 
-from defeat_zerglings import deepq_defeat_zerglings
+import deepq_defeat_zerglings
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _PLAYER_FRIENDLY = 1
@@ -51,7 +51,7 @@ def main():
       'num_actions': 4,
     }
 
-    act = deepq_defeat_zerglings.load("model.pkl", act_params=act_params)
+    act = deepq_defeat_zerglings.load("mineral_shards.pkl", act_params=act_params)
 
     while True:
 
