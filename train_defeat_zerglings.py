@@ -46,7 +46,7 @@ def main():
       gamma=0.99,
       prioritized_replay=True
     )
-    act.save("mineral_shards.pkl")
+    act.save("defeat_zerglings.pkl")
 
 
 if __name__ == '__main__':
