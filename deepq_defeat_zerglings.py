@@ -518,16 +518,17 @@ def init(env, player_relative, obs):
 
   if(army_count==0):
     return obs
+  try:
+    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
 
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-
-  player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
-  obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
-
+    player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+    obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+  except Exception as e:
+    print(e)
   for i in range(len(player_x)):
     if i % 4 != 0:
       continue
