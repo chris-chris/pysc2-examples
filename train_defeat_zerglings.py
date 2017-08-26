@@ -13,7 +13,7 @@ _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
 step_mul = 1
-steps = 400
+steps = 2000
 
 FLAGS = flags.FLAGS
 
@@ -34,7 +34,7 @@ def main():
     act = deepq_defeat_zerglings.learn(
       env,
       q_func=model,
-      num_actions=8,
+      num_actions=2,
       lr=1e-4,
       max_timesteps=10000000,
       buffer_size=100000,
