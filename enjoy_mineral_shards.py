@@ -23,7 +23,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
 
-step_mul = 1
+step_mul = 16
 steps = 400
 
 FLAGS = flags.FLAGS
