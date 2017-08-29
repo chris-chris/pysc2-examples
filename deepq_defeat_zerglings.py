@@ -303,6 +303,15 @@ def learn(env,
           if not danger_min_dist or dist < danger_min_dist:
             danger_closest, danger_min_dist = p, dist
 
+
+      marine_closest, marine_min_dist = None, None
+      for e in zip(friendly_x, friendly_y):
+        for p in zip(friendly_x, friendly_y):
+          dist = np.linalg.norm(np.array(p) - np.array(e))
+          if not marine_min_dist or dist < marine_min_dist:
+            if dist >= 2:
+              marine_closest, marine_min_dist = p, dist
+
       if(danger_min_dist != None and danger_min_dist <= 5):
         obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[0], danger_closest])])
 
@@ -310,13 +319,21 @@ def learn(env,
         player_y, player_x = (selected == _PLAYER_FRIENDLY).nonzero()
         if(len(player_y)>0):
           player = [int(player_x.mean()), int(player_y.mean())]
+
+      elif(marine_closest != None and marine_min_dist <= 3):
+        obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[0], marine_closest])])
+
+        selected = obs[0].observation["screen"][_SELECTED]
+        player_y, player_x = (selected == _PLAYER_FRIENDLY).nonzero()
+        if(len(player_y)>0):
+          player = [int(player_x.mean()), int(player_y.mean())]
+
       else:
 
         # If there is no marine in danger, select random
         while(len(group_list)>0):
           # units = env._obs.observation.raw_data.units
-          # marine_list = []
-          # for unit in units:
+          # marine_list = []          # for unit in units:
           #   if(unit.alliance == 1):
           #     marine_list.append(unit)
 
@@ -351,6 +368,8 @@ def learn(env,
 
       new_action = None
 
+      player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+
       coord = [player[0], player[1]]
       enemy_y, enemy_x = (player_relative == _PLAYER_HOSTILE).nonzero()
 
@@ -360,9 +379,43 @@ def learn(env,
         if not min_dist or dist < min_dist:
           closest, min_dist = p, dist
 
+
+      player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+      friendly_y, friendly_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+
+      closest_friend, min_dist_friend = None, None
+      for p in zip(friendly_x, friendly_y):
+        dist = np.linalg.norm(np.array(player) - np.array(p))
+        if not min_dist_friend or dist < min_dist_friend:
+          closest_friend, min_dist_friend = p, dist
+
       if(closest == None):
 
         new_action = [sc2_actions.FunctionCall(_NO_OP, [])]
+
+      elif(action == 0 and closest_friend != None and min_dist_friend < 5):
+        # Friendly marine is too close => Sparse!
+
+        diff = np.array(player) - np.array(closest_friend)
+
+        norm = np.linalg.norm(diff)
+
+        if(norm != 0):
+          diff = diff / norm
+
+        coord = np.array(player) + diff * 3
+
+        if(coord[0]<0):
+          coord[0] = 0
+        elif(coord[0]>63):
+          coord[0] = 63
+
+        if(coord[1]<0):
+          coord[1] = 0
+        elif(coord[1]>63):
+          coord[1] = 63
+
+        new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
 
       elif(action <= 1): #Attack
 
@@ -594,13 +647,13 @@ def check_group_list(env, obs):
     if(group[0]==48):
       army_count += group[1]
       if(group[1] != 1):
-        print("group error group_id : %s count : %s" % (id, group[1]))
+        #print("group error group_id : %s count : %s" % (id, group[1]))
         error = True
         return error
   if(army_count != env._obs.observation.player_common.army_count):
     error = True
-    print("army_count %s !=  %s env._obs.observation.player_common.army_count "
-          % (army_count, env._obs.observation.player_common.army_count))
+    #print("army_count %s !=  %s env._obs.observation.player_common.army_count "
+    #      % (army_count, env._obs.observation.player_common.army_count))
 
 
   return error
