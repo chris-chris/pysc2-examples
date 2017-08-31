@@ -234,24 +234,24 @@ def learn(env,
 
   obs = env.reset()
   # Select all marines first
-  step_result = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+  obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
 
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-  obs = player_relative + path_memory
+  screen = player_relative + path_memory
 
   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
   player = [int(player_x.mean()), int(player_y.mean())]
 
   if(player[0]>32):
-    obs = shift(LEFT, player[0]-32, obs)
+    screen = shift(LEFT, player[0]-32, screen)
   elif(player[0]<32):
-    obs = shift(RIGHT, 32 - player[0], obs)
+    screen = shift(RIGHT, 32 - player[0], screen)
 
   if(player[1]>32):
-    obs = shift(UP, player[1]-32, obs)
+    screen = shift(UP, player[1]-32, screen)
   elif(player[1]<32):
-    obs = shift(DOWN, 32 - player[1], obs)
+    screen = shift(DOWN, 32 - player[1], screen)
 
   reset = True
   with tempfile.TemporaryDirectory() as td:
@@ -280,7 +280,7 @@ def learn(env,
         kwargs['reset'] = reset
         kwargs['update_param_noise_threshold'] = update_param_noise_threshold
         kwargs['update_param_noise_scale'] = True
-      action = act(np.array(obs)[None], update_eps=update_eps, **kwargs)[0]
+      action = act(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
       reset = False
 
       coord = [player[0], player[1]]
@@ -341,55 +341,61 @@ def learn(env,
       path_memory = np.array(path_memory_)
       #print("action : %s Coord : %s" % (action, coord))
 
+      if _MOVE_SCREEN not in obs[0].observation["available_actions"]:
+        obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+
       new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
 
-      step_result = env.step(actions=new_action)
+      # else:
+      #   new_action = [sc2_actions.FunctionCall(_NO_OP, [])]
 
-      player_relative = step_result[0].observation["screen"][_PLAYER_RELATIVE]
-      new_obs = player_relative + path_memory
+      obs = env.step(actions=new_action)
+
+      player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+      new_screen = player_relative + path_memory
 
       player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
       player = [int(player_x.mean()), int(player_y.mean())]
 
       if(player[0]>32):
-        new_obs = shift(LEFT, player[0]-32, new_obs)
+        new_screen = shift(LEFT, player[0]-32, new_screen)
       elif(player[0]<32):
-        new_obs = shift(RIGHT, 32 - player[0], new_obs)
+        new_screen = shift(RIGHT, 32 - player[0], new_screen)
 
       if(player[1]>32):
-        new_obs = shift(UP, player[1]-32, new_obs)
+        new_screen = shift(UP, player[1]-32, new_screen)
       elif(player[1]<32):
-        new_obs = shift(DOWN, 32 - player[1], new_obs)
+        new_screen = shift(DOWN, 32 - player[1], new_screen)
 
-      rew += step_result[0].reward * 10
+      rew += obs[0].reward * 10
 
-      done = step_result[0].step_type == environment.StepType.LAST
+      done = obs[0].step_type == environment.StepType.LAST
 
       # Store transition in the replay buffer.
-      replay_buffer.add(obs, action, rew, new_obs, float(done))
-      obs = new_obs
+      replay_buffer.add(screen, action, rew, new_screen, float(done))
+      screen = new_screen
 
       episode_rewards[-1] += rew
-      episode_minerals[-1] += step_result[0].reward
+      episode_minerals[-1] += obs[0].reward
 
       if done:
         obs = env.reset()
         player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-        obs = player_relative + path_memory
+        screen = player_relative + path_memory
 
         player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
 
         if(player[0]>32):
-          obs = shift(LEFT, player[0]-32, obs)
+          screen = shift(LEFT, player[0]-32, screen)
         elif(player[0]<32):
-          obs = shift(RIGHT, 32 - player[0], obs)
+          screen = shift(RIGHT, 32 - player[0], screen)
 
         if(player[1]>32):
-          obs = shift(UP, player[1]-32, obs)
+          screen = shift(UP, player[1]-32, screen)
         elif(player[1]<32):
-          obs = shift(DOWN, 32 - player[1], obs)
+          screen = shift(DOWN, 32 - player[1], screen)
 
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
