@@ -5,7 +5,7 @@ from baselines import deepq
 from pysc2.env import sc2_env
 from pysc2.lib import actions
 
-import deepq_defeat_zerglings
+from defeat_zerglings import dqfd
 
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
@@ -13,7 +13,7 @@ _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
 step_mul = 1
-steps = 800
+steps = 2000
 
 FLAGS = flags.FLAGS
 
@@ -30,8 +30,8 @@ def main():
       hiddens=[256],
       dueling=True
     )
-
-    act = deepq_defeat_zerglings.learn(
+    demo_replay = []
+    act = dqfd.learn(
       env,
       q_func=model,
       num_actions=3,
@@ -44,7 +44,8 @@ def main():
       learning_starts=100000,
       target_network_update_freq=1000,
       gamma=0.99,
-      prioritized_replay=True
+      prioritized_replay=True,
+      demo_replay=demo_replay
     )
     act.save("defeat_zerglings.pkl")
 
