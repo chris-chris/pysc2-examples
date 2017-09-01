@@ -25,6 +25,12 @@ The easiest way to get PySC2 is to use pip:
 $ pip install pysc2
 ```
 
+Also, you have to install `baselines` library.
+
+```shell
+$ pip install baselines
+```
+
 ## 2. Install StarCraft II
 
 ### Mac / Win
