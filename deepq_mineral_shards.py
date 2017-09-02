@@ -227,7 +227,7 @@ def learn(env,
   update_target()
 
   episode_rewards = [0.0]
-  episode_minerals = [0.0]
+  #episode_minerals = [0.0]
   saved_mean_reward = None
 
   path_memory = np.zeros((64,64))
@@ -295,8 +295,8 @@ def learn(env,
         elif(player[1] > 0):
           coord = [player[0], 0]
           path_memory_[0 : player[1], player[0]] = -1
-        else:
-          rew -= 1
+        #else:
+        #  rew -= 1
 
       elif(action == 1): #DOWN
 
@@ -306,8 +306,8 @@ def learn(env,
         elif(player[1] > 47):
           coord = [player[0], 63]
           path_memory_[player[1] : 63, player[0]] = -1
-        else:
-          rew -= 1
+        #else:
+        #  rew -= 1
 
       elif(action == 2): #LEFT
 
@@ -317,8 +317,8 @@ def learn(env,
         elif(player[0] < 16):
           coord = [0, player[1]]
           path_memory_[player[1], 0 : player[0]] = -1
-        else:
-          rew -= 1
+        #else:
+        #  rew -= 1
 
       elif(action == 3): #RIGHT
 
@@ -328,15 +328,15 @@ def learn(env,
         elif(player[0] > 47):
           coord = [63, player[1]]
           path_memory_[player[1], player[0] : 63] = -1
-        else:
-          rew -= 1
+        #else:
+        #  rew -= 1
 
-      else:
+      #else:
         #Cannot move, give minus reward
-        rew -= 1
+      #  rew -= 1
 
-      if(path_memory[coord[1],coord[0]] != 0):
-        rew -= 0.5
+      #if(path_memory[coord[1],coord[0]] != 0):
+      #  rew -= 0.5
 
       path_memory = np.array(path_memory_)
       #print("action : %s Coord : %s" % (action, coord))
@@ -367,7 +367,7 @@ def learn(env,
       elif(player[1]<32):
         new_screen = shift(DOWN, 32 - player[1], new_screen)
 
-      rew += obs[0].reward * 10
+      rew = obs[0].reward
 
       done = obs[0].step_type == environment.StepType.LAST
 
@@ -376,7 +376,7 @@ def learn(env,
       screen = new_screen
 
       episode_rewards[-1] += rew
-      episode_minerals[-1] += obs[0].reward
+      #episode_minerals[-1] += obs[0].reward
 
       if done:
         obs = env.reset()
@@ -400,7 +400,7 @@ def learn(env,
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
         episode_rewards.append(0.0)
-        episode_minerals.append(0.0)
+        #episode_minerals.append(0.0)
 
         path_memory = np.zeros((64,64))
 
@@ -424,13 +424,13 @@ def learn(env,
         update_target()
 
       mean_100ep_reward = round(np.mean(episode_rewards[-101:-1]), 1)
-      mean_100ep_mineral = round(np.mean(episode_minerals[-101:-1]), 1)
+      #mean_100ep_mineral = round(np.mean(episode_minerals[-101:-1]), 1)
       num_episodes = len(episode_rewards)
       if done and print_freq is not None and len(episode_rewards) % print_freq == 0:
         logger.record_tabular("steps", t)
         logger.record_tabular("episodes", num_episodes)
         logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
-        logger.record_tabular("mean 100 episode mineral", mean_100ep_mineral)
+        #logger.record_tabular("mean 100 episode mineral", mean_100ep_mineral)
         logger.record_tabular("% time spent exploring", int(100 * exploration.value(t)))
         logger.dump_tabular()
 

@@ -13,7 +13,6 @@ _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
 step_mul = 8
-steps = 400
 
 FLAGS = flags.FLAGS
 
@@ -22,8 +21,7 @@ def main():
   with sc2_env.SC2Env(
       "CollectMineralShards",
       step_mul=step_mul,
-      visualize=True,
-      game_steps_per_episode=steps * step_mul) as env:
+      visualize=True) as env:
 
     model = deepq.models.cnn_to_mlp(
       convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
