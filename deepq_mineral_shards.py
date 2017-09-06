@@ -225,14 +225,19 @@ def learn(env,
 
     if prioritized_replay_beta_iters is None:
       prioritized_replay_beta_iters = max_timesteps
-    beta_schedule = LinearSchedule(prioritized_replay_beta_iters,
+    beta_schedule_x = LinearSchedule(prioritized_replay_beta_iters,
                                    initial_p=prioritized_replay_beta0,
                                    final_p=1.0)
+
+    beta_schedule_y = LinearSchedule(prioritized_replay_beta_iters,
+                                     initial_p=prioritized_replay_beta0,
+                                     final_p=1.0)
   else:
     replay_buffer_x = ReplayBuffer(buffer_size)
     replay_buffer_y = ReplayBuffer(buffer_size)
 
-    beta_schedule = None
+    beta_schedule_x = None
+    beta_schedule_y = None
   # Create the schedule for exploration starting from 1.
   exploration = LinearSchedule(schedule_timesteps=int(exploration_fraction * max_timesteps),
                                initial_p=1.0,
@@ -344,10 +349,10 @@ def learn(env,
         # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
         if prioritized_replay:
 
-          experience_x = replay_buffer_x.sample(batch_size, beta=beta_schedule.value(t))
+          experience_x = replay_buffer_x.sample(batch_size, beta=beta_schedule_x.value(t))
           (obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x, batch_idxes_x) = experience_x
 
-          experience_y = replay_buffer_y.sample(batch_size, beta=beta_schedule.value(t))
+          experience_y = replay_buffer_y.sample(batch_size, beta=beta_schedule_y.value(t))
           (obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y, batch_idxes_y) = experience_y
         else:
 
