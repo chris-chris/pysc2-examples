@@ -230,7 +230,7 @@ def learn(env,
   #episode_minerals = [0.0]
   saved_mean_reward = None
 
-  path_memory = np.zeros((64,64))
+  #path_memory = np.zeros((64,64))
 
   obs = env.reset()
   # Select all marines first
@@ -238,25 +238,26 @@ def learn(env,
 
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-  screen = player_relative + path_memory
+  screen = player_relative #+ path_memory
 
   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
   player = [int(player_x.mean()), int(player_y.mean())]
 
-  if(player[0]>32):
-    screen = shift(LEFT, player[0]-32, screen)
-  elif(player[0]<32):
-    screen = shift(RIGHT, 32 - player[0], screen)
-
-  if(player[1]>32):
-    screen = shift(UP, player[1]-32, screen)
-  elif(player[1]<32):
-    screen = shift(DOWN, 32 - player[1], screen)
+  # if(player[0]>32):
+  #   screen = shift(LEFT, player[0]-32, screen)
+  # elif(player[0]<32):
+  #   screen = shift(RIGHT, 32 - player[0], screen)
+  #
+  # if(player[1]>32):
+  #   screen = shift(UP, player[1]-32, screen)
+  # elif(player[1]<32):
+  #   screen = shift(DOWN, 32 - player[1], screen)
 
   reset = True
   with tempfile.TemporaryDirectory() as td:
     model_saved = False
-    model_file = os.path.join(td, "model")
+    model_file = os.path.join("model/", "mineral_shards")
+    print(model_file)
 
     for t in range(max_timesteps):
       if callback is not None:
@@ -286,48 +287,48 @@ def learn(env,
       coord = [player[0], player[1]]
       rew = 0
 
-      path_memory_ = np.array(path_memory, copy=True)
-      if(action == 0): #UP
-
-        if(player[1] >= 16):
-          coord = [player[0], player[1] - 16]
-          path_memory_[player[1] - 16 : player[1], player[0]] = -1
-        elif(player[1] > 0):
-          coord = [player[0], 0]
-          path_memory_[0 : player[1], player[0]] = -1
-        #else:
-        #  rew -= 1
-
-      elif(action == 1): #DOWN
-
-        if(player[1] <= 47):
-          coord = [player[0], player[1] + 16]
-          path_memory_[player[1] : player[1] + 16, player[0]] = -1
-        elif(player[1] > 47):
-          coord = [player[0], 63]
-          path_memory_[player[1] : 63, player[0]] = -1
-        #else:
-        #  rew -= 1
-
-      elif(action == 2): #LEFT
-
-        if(player[0] >= 16):
-          coord = [player[0] - 16, player[1]]
-          path_memory_[player[1], player[0] - 16 : player[0]] = -1
-        elif(player[0] < 16):
-          coord = [0, player[1]]
-          path_memory_[player[1], 0 : player[0]] = -1
-        #else:
-        #  rew -= 1
-
-      elif(action == 3): #RIGHT
-
-        if(player[0] <= 47):
-          coord = [player[0] + 16, player[1]]
-          path_memory_[player[1], player[0] : player[0] + 16] = -1
-        elif(player[0] > 47):
-          coord = [63, player[1]]
-          path_memory_[player[1], player[0] : 63] = -1
+      #path_memory_ = np.array(path_memory, copy=True)
+      # if(action == 0): #UP
+      #
+      #   if(player[1] >= 16):
+      #     coord = [player[0], player[1] - 16]
+      #     path_memory_[player[1] - 16 : player[1], player[0]] = -1
+      #   elif(player[1] > 0):
+      #     coord = [player[0], 0]
+      #     path_memory_[0 : player[1], player[0]] = -1
+      #   #else:
+      #   #  rew -= 1
+      #
+      # elif(action == 1): #DOWN
+      #
+      #   if(player[1] <= 47):
+      #     coord = [player[0], player[1] + 16]
+      #     path_memory_[player[1] : player[1] + 16, player[0]] = -1
+      #   elif(player[1] > 47):
+      #     coord = [player[0], 63]
+      #     path_memory_[player[1] : 63, player[0]] = -1
+      #   #else:
+      #   #  rew -= 1
+      #
+      # elif(action == 2): #LEFT
+      #
+      #   if(player[0] >= 16):
+      #     coord = [player[0] - 16, player[1]]
+      #     path_memory_[player[1], player[0] - 16 : player[0]] = -1
+      #   elif(player[0] < 16):
+      #     coord = [0, player[1]]
+      #     path_memory_[player[1], 0 : player[0]] = -1
+      #   #else:
+      #   #  rew -= 1
+      #
+      # elif(action == 3): #RIGHT
+      #
+      #   if(player[0] <= 47):
+      #     coord = [player[0] + 16, player[1]]
+      #     path_memory_[player[1], player[0] : player[0] + 16] = -1
+      #   elif(player[0] > 47):
+      #     coord = [63, player[1]]
+      #     path_memory_[player[1], player[0] : 63] = -1
         #else:
         #  rew -= 1
 
@@ -338,7 +339,9 @@ def learn(env,
       #if(path_memory[coord[1],coord[0]] != 0):
       #  rew -= 0.5
 
-      path_memory = np.array(path_memory_)
+      coord = intToCoordinate(action)
+
+      #path_memory = np.array(path_memory_)
       #print("action : %s Coord : %s" % (action, coord))
 
       if _MOVE_SCREEN not in obs[0].observation["available_actions"]:
@@ -352,20 +355,20 @@ def learn(env,
       obs = env.step(actions=new_action)
 
       player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
-      new_screen = player_relative + path_memory
+      new_screen = player_relative #+ path_memory
 
       player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
       player = [int(player_x.mean()), int(player_y.mean())]
 
-      if(player[0]>32):
-        new_screen = shift(LEFT, player[0]-32, new_screen)
-      elif(player[0]<32):
-        new_screen = shift(RIGHT, 32 - player[0], new_screen)
-
-      if(player[1]>32):
-        new_screen = shift(UP, player[1]-32, new_screen)
-      elif(player[1]<32):
-        new_screen = shift(DOWN, 32 - player[1], new_screen)
+      # if(player[0]>32):
+      #   new_screen = shift(LEFT, player[0]-32, new_screen)
+      # elif(player[0]<32):
+      #   new_screen = shift(RIGHT, 32 - player[0], new_screen)
+      #
+      # if(player[1]>32):
+      #   new_screen = shift(UP, player[1]-32, new_screen)
+      # elif(player[1]<32):
+      #   new_screen = shift(DOWN, 32 - player[1], new_screen)
 
       rew = obs[0].reward
 
@@ -382,7 +385,7 @@ def learn(env,
         obs = env.reset()
         player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-        screen = player_relative + path_memory
+        screen = player_relative #+ path_memory
 
         player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
@@ -402,7 +405,7 @@ def learn(env,
         episode_rewards.append(0.0)
         #episode_minerals.append(0.0)
 
-        path_memory = np.zeros((64,64))
+        #path_memory = np.zeros((64,64))
 
         reset = True
 

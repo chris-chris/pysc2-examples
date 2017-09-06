@@ -12,7 +12,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
-step_mul = 8
+step_mul = 1
 
 FLAGS = flags.FLAGS
 
@@ -24,7 +24,7 @@ def main():
       visualize=True) as env:
 
     model = deepq.models.cnn_to_mlp(
-      convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
+      convs=[(16, 8, 4), (32, 4, 2)],
       hiddens=[256],
       dueling=True
     )
@@ -32,7 +32,7 @@ def main():
     act = deepq_mineral_shards.learn(
       env,
       q_func=model,
-      num_actions=4,
+      num_actions=64*64,
       lr=1e-5,
       max_timesteps=2000000,
       buffer_size=100000,
