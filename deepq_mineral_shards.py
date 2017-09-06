@@ -325,6 +325,8 @@ def learn(env,
 
       # Store transition in the replay buffer.
       replay_buffer_x.add(screen, action_x, rew, new_screen, float(done))
+      replay_buffer_y.add(screen, action_y, rew, new_screen, float(done))
+
       screen = new_screen
 
       episode_rewards[-1] += rew
