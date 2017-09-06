@@ -32,8 +32,8 @@ def main():
     act = deepq_mineral_shards.learn(
       env,
       q_func=model,
-      num_actions=64*64,
-      lr=1e-5,
+      num_actions=64,
+      lr=1e-4,
       max_timesteps=20000000,
       buffer_size=100000,
       exploration_fraction=0.5,
