@@ -390,15 +390,15 @@ def learn(env,
         player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
 
-        if(player[0]>32):
-          screen = shift(LEFT, player[0]-32, screen)
-        elif(player[0]<32):
-          screen = shift(RIGHT, 32 - player[0], screen)
-
-        if(player[1]>32):
-          screen = shift(UP, player[1]-32, screen)
-        elif(player[1]<32):
-          screen = shift(DOWN, 32 - player[1], screen)
+        # if(player[0]>32):
+        #   screen = shift(LEFT, player[0]-32, screen)
+        # elif(player[0]<32):
+        #   screen = shift(RIGHT, 32 - player[0], screen)
+        #
+        # if(player[1]>32):
+        #   screen = shift(UP, player[1]-32, screen)
+        # elif(player[1]<32):
+        #   screen = shift(DOWN, 32 - player[1], screen)
 
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
