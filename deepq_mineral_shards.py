@@ -244,10 +244,7 @@ def learn(env,
   update_target_y()
 
   episode_rewards = [0.0]
-  #episode_minerals = [0.0]
   saved_mean_reward = None
-
-  #path_memory = np.zeros((64,64))
 
   obs = env.reset()
   # Select all marines first
@@ -317,16 +314,6 @@ def learn(env,
       player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
       player = [int(player_x.mean()), int(player_y.mean())]
 
-      # if(player[0]>32):
-      #   new_screen = shift(LEFT, player[0]-32, new_screen)
-      # elif(player[0]<32):
-      #   new_screen = shift(RIGHT, 32 - player[0], new_screen)
-      #
-      # if(player[1]>32):
-      #   new_screen = shift(UP, player[1]-32, new_screen)
-      # elif(player[1]<32):
-      #   new_screen = shift(DOWN, 32 - player[1], new_screen)
-
       rew = obs[0].reward
 
       done = obs[0].step_type == environment.StepType.LAST
@@ -336,7 +323,6 @@ def learn(env,
       screen = new_screen
 
       episode_rewards[-1] += rew
-      #episode_minerals[-1] += obs[0].reward
 
       if done:
         obs = env.reset()
@@ -347,38 +333,32 @@ def learn(env,
         player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
 
-        # if(player[0]>32):
-        #   screen = shift(LEFT, player[0]-32, screen)
-        # elif(player[0]<32):
-        #   screen = shift(RIGHT, 32 - player[0], screen)
-        #
-        # if(player[1]>32):
-        #   screen = shift(UP, player[1]-32, screen)
-        # elif(player[1]<32):
-        #   screen = shift(DOWN, 32 - player[1], screen)
-
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
         episode_rewards.append(0.0)
         #episode_minerals.append(0.0)
-
-        #path_memory = np.zeros((64,64))
 
         reset = True
 
       if t > learning_starts and t % train_freq == 0:
         # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
         if prioritized_replay:
-          experience = replay_buffer_x.sample(batch_size, beta=beta_schedule.value(t))
-          (obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x, batch_idxes_x) = experience
-          experience = replay_buffer_y.sample(batch_size, beta=beta_schedule.value(t))
-          (obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y, batch_idxes_y) = experience
+
+          experience_x = replay_buffer_x.sample(batch_size, beta=beta_schedule.value(t))
+          (obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x, batch_idxes_x) = experience_x
+
+          experience_y = replay_buffer_y.sample(batch_size, beta=beta_schedule.value(t))
+          (obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y, batch_idxes_y) = experience_y
         else:
+
           obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x = replay_buffer_x.sample(batch_size)
           weights_x, batch_idxes_x = np.ones_like(rewards_x), None
+
           obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y = replay_buffer_y.sample(batch_size)
-          weights_y, batch_idxes_y = np.ones_like(rewards_x), None
+          weights_y, batch_idxes_y = np.ones_like(rewards_y), None
+
         td_errors_x = train_x(obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x)
+
         td_errors_y = train_x(obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y)
 
 
@@ -395,13 +375,11 @@ def learn(env,
         update_target_y()
 
       mean_100ep_reward = round(np.mean(episode_rewards[-101:-1]), 1)
-      #mean_100ep_mineral = round(np.mean(episode_minerals[-101:-1]), 1)
       num_episodes = len(episode_rewards)
       if done and print_freq is not None and len(episode_rewards) % print_freq == 0:
         logger.record_tabular("steps", t)
         logger.record_tabular("episodes", num_episodes)
         logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
-        #logger.record_tabular("mean 100 episode mineral", mean_100ep_mineral)
         logger.record_tabular("% time spent exploring", int(100 * exploration.value(t)))
         logger.dump_tabular()
 
