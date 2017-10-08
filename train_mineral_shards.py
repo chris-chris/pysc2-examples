@@ -9,13 +9,13 @@ from baselines import logger
 from baselines.common import set_global_seeds
 
 import deepq_mineral_shards
-
+import datetime
 
 from baselines import bench
 from common.vec_env.subproc_vec_env import SubprocVecEnv
 from acktr.policies import CnnPolicy
 from acktr import acktr_disc
-
+from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
@@ -26,15 +26,63 @@ step_mul = 8
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("map", "CollectMineralShards", "Name of a map to use to play.")
-flags.DEFINE_string("algorithm", "acktr", "RL algorithm to use.")
+start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
+flags.DEFINE_string("log", "tensorboard", "logging type(stdout, tensorboard)")
+flags.DEFINE_string("algorithm", "deepq", "RL algorithm to use.")
+flags.DEFINE_integer("timesteps", 2000000, "Steps to train")
+flags.DEFINE_float("exploration_fraction", 0.5, "Exploration Fraction")
+flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
+flags.DEFINE_boolean("dueling", True, "dueling")
+flags.DEFINE_float("lr", 0.0005, "Learning rate")
+flags.DEFINE_integer("num_cpu", 4, "number of cpus")
 
 def main():
   FLAGS(sys.argv)
 
+  print("algorithm : %s" % FLAGS.algorithm)
+  print("timesteps : %s" % FLAGS.timesteps)
+  print("exploration_fraction : %s" % FLAGS.exploration_fraction)
+  print("prioritized : %s" % FLAGS.prioritized)
+  print("dueling : %s" % FLAGS.dueling)
+  print("num_cpu : %s" % FLAGS.num_cpu)
+  print("lr : %s" % FLAGS.lr)
+
+  logdir = "tensorboard"
+  if(FLAGS.algorithm == "deepq"):
+    logdir = "tensorboard/%s/%s_%s_prio%s_duel%s_lr%s/%s" % (
+      FLAGS.algorithm,
+      FLAGS.timesteps,
+      FLAGS.exploration_fraction,
+      FLAGS.prioritized,
+      FLAGS.dueling,
+      FLAGS.lr,
+      start_time
+    )
+  elif(FLAGS.algorithm == "acktr"):
+    logdir = "tensorboard/%s/%s_num%s_lr%s/%s" % (
+      FLAGS.algorithm,
+      FLAGS.timesteps,
+      FLAGS.num_cpu,
+      FLAGS.lr,
+      start_time
+    )
+
+  if(FLAGS.log == "tensorboard"):
+    Logger.DEFAULT \
+      = Logger.CURRENT \
+      = Logger(dir=None,
+               output_formats=[TensorBoardOutputFormat(logdir)])
+
+  elif(FLAGS.log == "stdout"):
+    Logger.DEFAULT \
+      = Logger.CURRENT \
+      = Logger(dir=None,
+               output_formats=[HumanOutputFormat(sys.stdout)])
+
   if(FLAGS.algorithm == "deepq"):
 
     with sc2_env.SC2Env(
-        "DefeatZerglingsAndBanelings",
+        "CollectMineralShards",
         step_mul=step_mul,
         visualize=True) as env:
 
@@ -72,7 +120,7 @@ def main():
 
     def make_env(rank):
       env = sc2_env.SC2Env(
-        "DefeatZerglingsAndBanelings",
+        "CollectMineralShards",
         step_mul=step_mul)
       #env.seed(seed + rank)
       #def _thunk():

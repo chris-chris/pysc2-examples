@@ -1,4 +1,5 @@
 import sys
+import datetime
 
 import gflags as flags
 from baselines import deepq
@@ -6,6 +7,7 @@ from pysc2.env import sc2_env
 from pysc2.lib import actions
 
 from defeat_zerglings import dqfd
+from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
@@ -16,9 +18,51 @@ step_mul = 1
 steps = 2000
 
 FLAGS = flags.FLAGS
+start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
+flags.DEFINE_string("log", "tensorboard", "logging type(stdout, tensorboard)")
+flags.DEFINE_string("algorithm", "deepq", "RL algorithm to use.")
+flags.DEFINE_integer("timesteps", 2000000, "Steps to train")
+flags.DEFINE_float("exploration_fraction", 0.5, "Exploration Fraction")
+flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
+flags.DEFINE_boolean("dueling", True, "dueling")
+flags.DEFINE_float("lr", 0.0005, "Learning rate")
+
 
 def main():
   FLAGS(sys.argv)
+
+  logdir = "tensorboard"
+  if(FLAGS.algorithm == "deepq"):
+    logdir = "tensorboard/%s/%s_%s_prio%s_duel%s_lr%s/%s" % (
+      FLAGS.algorithm,
+      FLAGS.timesteps,
+      FLAGS.exploration_fraction,
+      FLAGS.prioritized,
+      FLAGS.dueling,
+      FLAGS.lr,
+      start_time
+    )
+  elif(FLAGS.algorithm == "acktr"):
+    logdir = "tensorboard/%s/%s_num%s_lr%s/%s" % (
+      FLAGS.algorithm,
+      FLAGS.timesteps,
+      FLAGS.num_cpu,
+      FLAGS.lr,
+      start_time
+    )
+
+  if(FLAGS.log == "tensorboard"):
+    Logger.DEFAULT \
+      = Logger.CURRENT \
+      = Logger(dir=None,
+               output_formats=[TensorBoardOutputFormat(logdir)])
+
+  elif(FLAGS.log == "stdout"):
+    Logger.DEFAULT \
+      = Logger.CURRENT \
+      = Logger(dir=None,
+               output_formats=[HumanOutputFormat(sys.stdout)])
+
   with sc2_env.SC2Env(
       "DefeatZerglingsAndBanelings",
       step_mul=step_mul,

@@ -27,8 +27,8 @@ _SELECT_POINT = actions.FUNCTIONS.select_point.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
 
-def init(env, player_relative, obs):
-
+def init(env, obs):
+  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
   #print("init")
   army_count = env._obs.observation.player_common.army_count
 
@@ -155,7 +155,7 @@ def select_marine(env, obs):
   group_list = update_group_list(obs)
 
   if(check_group_list(env, obs)):
-    obs = init(env, player_relative, obs)
+    obs = init(env, obs)
     group_list = update_group_list(obs)
 
   # if(len(group_list) == 0):
@@ -214,7 +214,7 @@ def select_marine(env, obs):
       group_id = np.random.choice(group_list)
       #xy = [int(unit.pos.y - 10), int(unit.pos.x+8)]
       #print("check xy : %s - %s" % (xy, player_relative[xy[0],xy[1]]))
-      obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_CONTROL_GROUP, [[_CONTROL_GROUP_RECALL], [group_id]])])
+      obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_CONTROL_GROUP, [[_CONTROL_GROUP_RECALL], [int(group_id)]])])
 
       selected = obs[0].observation["screen"][_SELECTED]
       player_y, player_x = (selected == _PLAYER_FRIENDLY).nonzero()

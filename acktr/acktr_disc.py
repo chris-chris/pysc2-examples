@@ -29,6 +29,12 @@ class Model(object):
     #nact = ac_space.n
     nbatch = nenvs * nsteps
     A = tf.placeholder(tf.int32, [nbatch])
+    A2 = tf.placeholder(tf.int32, [nbatch])
+    X1 = tf.placeholder(tf.int32, [nbatch])
+    Y1 = tf.placeholder(tf.int32, [nbatch])
+    X2 = tf.placeholder(tf.int32, [nbatch])
+    Y2 = tf.placeholder(tf.int32, [nbatch])
+
     ADV = tf.placeholder(tf.float32, [nbatch])
     R = tf.placeholder(tf.float32, [nbatch])
     PG_LR = tf.placeholder(tf.float32, [])
@@ -37,16 +43,21 @@ class Model(object):
     self.model = step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
     self.model2 = train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
 
-    logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+    logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi2, labels=A2) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.x1, labels=X1) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.y1, labels=Y1) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.x2, labels=X2) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.y2, labels=Y2)
+
     self.logits = logits = train_model.pi
 
     ##training loss
-    pg_loss = tf.reduce_mean(ADV*logpac)
+    pg_loss = tf.reduce_mean(ADV*logpac) * tf.reduce_mean(ADV)
     entropy = tf.reduce_mean(cat_entropy(train_model.pi))
     pg_loss = pg_loss - ent_coef * entropy
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
     train_loss = pg_loss + vf_coef * vf_loss
-
 
     ##Fisher loss construction
     self.pg_fisher = pg_fisher_loss = -tf.reduce_mean(logpac)
@@ -68,12 +79,12 @@ class Model(object):
     self.q_runner = q_runner
     self.lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
-    def train(obs, states, rewards, masks, actions, values):
+    def train(obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values):
       advs = rewards - values
       for step in range(len(obs)):
         cur_lr = self.lr.value()
 
-      td_map = {train_model.X:obs, A:actions, ADV:advs, R:rewards, PG_LR:cur_lr}
+      td_map = {train_model.X:obs, A:actions, A2:actions2, X1:x1, Y1:y1, X2:x2, Y2:y2, ADV:advs, R:rewards, PG_LR:cur_lr}
       if states != []:
         td_map[train_model.S] = states
         td_map[train_model.M] = masks
@@ -185,8 +196,8 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
   set_global_seeds(seed)
 
   nenvs = nprocs
-  ob_space = (64, 64, 13) # env.observation_space
-  ac_space = (524, 64, 64)
+  ob_space = (64, 64, 1) # env.observation_space
+  ac_space = (64, 64)
   make_model = lambda : Model(policy, ob_space, ac_space, nenvs,
                               total_timesteps,
                               nprocs=nprocs,

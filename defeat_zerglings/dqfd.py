@@ -254,7 +254,7 @@ def learn(env,
 
   screen = player_relative
 
-  obs = common.init(env, player_relative, obs)
+  obs = common.init(env, obs)
 
   group_id = 0
   reset = True
@@ -338,6 +338,7 @@ def learn(env,
       screen = new_screen
 
       episode_rewards[-1] += rew
+      reward = episode_rewards[-1]
 
       if done:
         print("Episode Reward : %s" % episode_rewards[-1])
@@ -346,7 +347,7 @@ def learn(env,
 
         screen = player_relative
 
-        group_list = common.init(env, player_relative, obs)
+        group_list = common.init(env, obs)
 
         # Select all marines first
         #env.step(actions=[sc2_actions.FunctionCall(_SELECT_UNIT, [_SELECT_ALL])])
@@ -376,6 +377,7 @@ def learn(env,
       if done and print_freq is not None and len(episode_rewards) % print_freq == 0:
         logger.record_tabular("steps", t)
         logger.record_tabular("episodes", num_episodes)
+        logger.record_tabular("reward", reward)
         logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
         logger.record_tabular("% time spent exploring", int(100 * exploration.value(t)))
         logger.dump_tabular()
