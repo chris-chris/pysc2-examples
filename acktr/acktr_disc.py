@@ -47,13 +47,13 @@ class Model(object):
     self.model2 = train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
 
     logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub1, labels=SUB1) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub2, labels=SUB2) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub1, labels=SUB1) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub2, labels=SUB2) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
 
     self.logits = logits = train_model.pi
 
