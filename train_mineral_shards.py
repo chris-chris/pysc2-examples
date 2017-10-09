@@ -17,6 +17,9 @@ from acktr.policies import CnnPolicy
 from acktr import acktr_disc
 from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
+import threading
+import time
+
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_ALL = [0]
@@ -118,27 +121,92 @@ def main():
     seed=0
     num_cpu=2
 
-    def make_env(rank):
-      env = sc2_env.SC2Env(
-        "CollectMineralShards",
-        step_mul=step_mul)
-      #env.seed(seed + rank)
-      #def _thunk():
-        # env = sc2_env.SC2Env(
-        #     FLAGS.map,
-        #     step_mul=step_mul,
-        #     visualize=True)
-        # env.seed(seed + rank)
-        #if logger.get_dir():
-        #  env = bench.Monitor(env, os.path.join(logger.get_dir(), "{}.monitor.json".format(rank)))
-      return env
-      #return _thunk
+    # def make_env(rank):
+    #   # env = sc2_env.SC2Env(
+    #   #   "CollectMineralShards",
+    #   #   step_mul=step_mul)
+    #   # return env
+    #   #env.seed(seed + rank)
+    #   def _thunk():
+    #     env = sc2_env.SC2Env(
+    #         map_name=FLAGS.map,
+    #         step_mul=step_mul,
+    #         visualize=True)
+    #     #env.seed(seed + rank)
+    #     if logger.get_dir():
+    #      env = bench.Monitor(env, os.path.join(logger.get_dir(), "{}.monitor.json".format(rank)))
+    #     return env
+    #   return _thunk
 
-    set_global_seeds(seed)
-    env = SubprocVecEnv([make_env(i) for i in range(num_cpu)])
+    # agents = [Agent()
+    #           for _ in range(num_cpu)]
+    #
+    # for agent in agents:
+    #   time.sleep(1)
+    #   agent.daemon = True
+    #   agent.start()
+
+    # agent_controller = AgentController(agents)
+
+    #set_global_seeds(seed)
+    env = SubprocVecEnv(num_cpu, FLAGS.map)
 
     policy_fn = CnnPolicy
     acktr_disc.learn(policy_fn, env, seed, total_timesteps=num_timesteps, nprocs=num_cpu)
+
+from pysc2.env import environment
+import numpy as np
+
+class Agent(threading.Thread):
+  def __init__(self):
+    threading.Thread.__init__(self)
+    self.env = sc2_env.SC2Env(
+      map_name=FLAGS.map,
+      step_mul=step_mul)
+
+    def run(self):
+      print(threading.currentThread().getName(), self.receive_messages)
+
+    def do_thing_with_message(self, message):
+      if self.receive_messages:
+        print(threading.currentThread().getName(), "Received %s".format(message))
+
+class AgentController(object):
+  def __init__(self, agents):
+    self.agents = agents
+    self.observation_space = (64,64,13)
+
+  def step(self, actions):
+    obs, rewards, dones, infos = [], [], [], []
+    for idx, agent in enumerate(self.agents):
+      result = agent.env.step(actions=actions[idx])
+      ob = result[0].observation["screen"]
+      reward = result[0].reward
+      done = result[0].step_type == environment.StepType.LAST
+      info = result[0].observation["available_actions"]
+      obs.append(ob)
+      rewards.append(reward)
+      dones.append(done)
+      infos.append(info)
+    return np.stack(obs), np.stack(rewards), np.stack(dones), np.stack(infos)
+
+  def close(self, actions):
+    for idx, agent in enumerate(self.agents):
+      agent.env.close()
+
+  def reset(self):
+    obs, rewards, dones, infos = [], [], [], []
+    for idx, agent in enumerate(self.agents):
+      result = agent.env.reset()
+      ob = result[0].observation["screen"]
+      reward = result[0].reward
+      done = result[0].step_type == environment.StepType.LAST
+      info = result[0].observation["available_actions"]
+      obs.append(ob)
+      rewards.append(reward)
+      dones.append(done)
+      infos.append(info)
+    return np.stack(obs), np.stack(rewards), np.stack(dones), np.stack(infos)
 
 if __name__ == '__main__':
   main()

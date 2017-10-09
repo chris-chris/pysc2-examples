@@ -13,6 +13,7 @@ from baselines.acktr.utils import cat_entropy, mse
 from baselines.acktr import kfac
 
 from pysc2.env import environment
+from pysc2.lib import actions as sc2_actions
 
 class Model(object):
 
@@ -106,8 +107,6 @@ class Model(object):
         restores.append(p.assign(loaded_p))
       sess.run(restores)
 
-
-
     self.train = train
     self.save = save
     self.load = load
@@ -116,44 +115,78 @@ class Model(object):
     self.step = step_model.step
     self.value = step_model.value
     self.initial_state = step_model.initial_state
+    print("global_variables_initializer start")
     tf.global_variables_initializer().run(session=sess)
+    print("global_variables_initializer complete")
 
 class Runner(object):
 
   def __init__(self, env, model, nsteps, nstack, gamma):
     self.env = env
     self.model = model
-    nh, nw, nc = env.observation_space.shape
-    nenv = env.num_envs
-    self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
-    self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.uint8)
-    obs = env.reset()
-    self.update_obs(obs)
+    nh, nw, nc = (64, 64, 13)
+    self.nenv = nenv = env.num_envs
+    self.batch_ob_shape = (nenv*nsteps, nc*nstack, nh, nw)
+    self.obs = np.zeros((nenv, nc*nstack, nh, nw), dtype=np.uint8)
+    self.available_actions = None
+    self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
+    obs, rewards, dones, available_actions = env.reset()
+    self.update_obs(obs) # (2,13,64,64)
+    self.update_available(available_actions)
     self.gamma = gamma
     self.nsteps = nsteps
     self.states = model.initial_state
     self.dones = [False for _ in range(nenv)]
 
   def update_obs(self, obs):
-    self.obs = np.roll(self.obs, shift=-1, axis=3)
-    self.obs[:, :, :, -1] = obs[:, :, :, 0]
+    self.obs = np.roll(self.obs, shift=-1, axis=1)
+    self.obs[:, -1, :, :] = obs[:, 0, :, :]
+
+  def update_available(self, _available_actions):
+    self.available_actions = _available_actions
+    # avail = np.array([[0,1,2,3,4,7], [0,1,2,3,4,7]])
+    self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
+    for env_num, list in enumerate(_available_actions):
+      for action_num in list:
+        self.base_act_mask[env_num][action_num] = 1
+
+  def valid_base_action(self, base_action):
+    for env_num, list in enumerate(self.available_actions):
+      if base_action[env_num] not in list:
+        base_action[env_num] = np.random.choice(list)
 
   def run(self):
-    mb_obs, mb_rewards, mb_actions, mb_values, mb_dones = [],[],[],[],[]
+    mb_obs, mb_rewards, mb_base_actions, mb_sub_actions,\
+      mb_x1, mb_y1, mb_x2, mb_y2, mb_values, mb_dones \
+      = [],[],[],[],[],[],[],[],[],[]
+
     mb_states = self.states
     for n in range(self.nsteps):
-      actions, values, states = self.model.step(self.obs, self.states, self.dones)
+      #pi, pi2, x1, y1, x2, y2, v0
+      pi1, pi2, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
+      #avail = self.env.available_actions()
+
+      base_action = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
+      base_action = self.valid_base_action(base_action)
+      sc2_actions.FUNCTIONS[base_action]
+      #sub_action = pi2 * avail2 #pi2 (2?, 500) * (2?, 500) masking
+
       mb_obs.append(np.copy(self.obs))
-      mb_actions.append(actions)
+      mb_base_actions.append(base_action)
+      mb_sub_actions.append(sub_action)
+      mb_x1.append(x1)
+      mb_y1.append(y1)
+      mb_x2.append(x2)
+      mb_y2.append(y2)
       mb_values.append(values)
       mb_dones.append(self.dones)
 
       #obs, rewards, dones, _ = self.env.step(actions)
+      actions = [sc2_actions.FunctionCall(base_action, [[sub_action], [x1, y1], [x2, y2]])]
 
-      step_result = self.env.step(actions=actions)
-      obs = step_result[0].observation["screen"]
-      rewards = step_result[0].reward
-      dones = step_result[0].step_type == environment.StepType.LAST
+
+      #infos = availbale_actions
+      obs, rewards, dones, available_actions = self.env.step(actions=actions)
 
       self.states = states
       self.dones = dones
@@ -166,7 +199,8 @@ class Runner(object):
     #batch of steps to batch of rollouts
     mb_obs = np.asarray(mb_obs, dtype=np.uint8).swapaxes(1, 0).reshape(self.batch_ob_shape)
     mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
-    mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)
+    mb_base_actions = np.asarray(mb_base_actions, dtype=np.int32).swapaxes(1, 0)
+    mb_sub_actions = np.asarray(mb_sub_actions, dtype=np.int32).swapaxes(1, 0)
     mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
     mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
     mb_masks = mb_dones[:, :-1]
@@ -182,13 +216,17 @@ class Runner(object):
         rewards = discount_with_dones(rewards, dones, self.gamma)
       mb_rewards[n] = rewards
     mb_rewards = mb_rewards.flatten()
-    mb_actions = mb_actions.flatten()
+    mb_base_actions = mb_base_actions.flatten()
+    mb_sub_actions = mb_sub_actions.flatten()
+
     mb_values = mb_values.flatten()
     mb_masks = mb_masks.flatten()
-    return mb_obs, mb_states, mb_rewards, mb_masks, mb_actions, mb_values
+    return mb_obs, mb_states, mb_rewards, mb_masks, \
+           mb_base_actions, mb_sub_actions,\
+           mb_x1, mb_y1, mb_x2, mb_y2, mb_values
 
 def learn(policy, env, seed, total_timesteps=int(40e6),
-          gamma=0.99, log_interval=1, nprocs=32, nsteps=20,
+          gamma=0.99, log_interval=1, nprocs=32, nsteps=2,
           nstack=4, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0,
           lr=0.25, max_grad_norm=0.5,
           kfac_clip=0.001, save_interval=None, lrschedule='linear'):
@@ -216,14 +254,16 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
     with open(osp.join(logger.get_dir(), 'make_model.pkl'), 'wb') as fh:
       fh.write(cloudpickle.dumps(make_model))
   model = make_model()
-
+  print("make_model complete!")
   runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
   nbatch = nenvs*nsteps
   tstart = time.time()
   enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
   for update in range(1, total_timesteps//nbatch+1):
-    obs, states, rewards, masks, actions, values = runner.run()
-    policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
+    obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values = runner.run()
+    # (obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values)
+    policy_loss, value_loss, policy_entropy \
+      = model.train(obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values)
     model.old_obs = obs
     nseconds = time.time()-tstart
     fps = int((update*nbatch)/nseconds)
