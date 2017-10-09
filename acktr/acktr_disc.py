@@ -182,7 +182,7 @@ class Runner(object):
   def construct_action(self, base_actions, base_action_spec, sub1, sub2, sub3, x1, y1, x2, y2):
     actions = []
     for env_num, spec in enumerate(base_action_spec):
-      print("spec", spec.args)
+      #print("spec", spec.args)
       args = []
       for arg_idx, arg in enumerate(spec.args):
         if(len(arg.sizes) == 1 and arg.sizes[0] == 2): # size : 2
@@ -217,14 +217,14 @@ class Runner(object):
 
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
       base_actions = self.valid_base_action(base_actions)
-      print("base_actions : ", base_actions)
+      #print("base_actions : ", base_actions)
       base_action_spec = self.env.action_spec(base_actions)
-      print("base_action_spec : ", base_action_spec)
+      #print("base_action_spec : ", base_action_spec)
       sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)
       sub1_actions = np.argmax(pi_sub1 * sub1_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
       sub2_actions = np.argmax(pi_sub2 * sub2_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
       sub3_actions = np.argmax(pi_sub3 * sub3_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
-      actions = self.construct_action(base_actions, base_action_spec, sub1_actions, sub2_actions, sub3_actions, x1, y1, x2, y2)
+      actions = self.construct_action(base_actions, base_action_spec, sub1_actions, sub2_actions, sub3_actions, x1*2, y1*2, x2*2, y2*2)
       #sc2_actions.FUNCTIONS[base_action]
       #sub_action = pi2 * avail2 #pi2 (2?, 500) * (2?, 500) masking
 
@@ -241,7 +241,7 @@ class Runner(object):
       mb_values.append(values)
       mb_dones.append(self.dones)
 
-      print("final acitons : ", actions)
+      #print("final acitons : ", actions)
       obs, rewards, dones, available_actions = self.env.step(actions=actions)
       self.update_available(available_actions)
 

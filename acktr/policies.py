@@ -18,7 +18,7 @@ class CnnPolicy(object):
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
-      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=1, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 16
+      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=2, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 16
       h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 32
       h3 = conv_to_fc(h2) # 8192
       h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # 2, 256
