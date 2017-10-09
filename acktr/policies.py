@@ -18,8 +18,8 @@ class CnnPolicy(object):
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
-      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=4, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 16
-      h2 = conv(h, 'c2', nf=32, rf=3, stride=2, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 32
+      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=1, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 16
+      h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 32
       h3 = conv_to_fc(h2) # 8192
       h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # 2, 256
       pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # 2, 524
@@ -47,8 +47,8 @@ class CnnPolicy(object):
 
     def step(ob, *_args, **_kwargs):
       #obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values
-      _pi1, _pi2, _x1, _y1, _x2, _y2, _v = sess.run([pi, pi2, x1, y1, x2, y2, v0], {X:ob})
-      return _pi1, _pi2, _x1, _y1, _x2, _y2, _v, [] #dummy state
+      _pi1, _pi_sub1, _pi_sub2, _pi_sub3, _x1, _y1, _x2, _y2, _v = sess.run([pi, pi_sub1, pi_sub2, pi_sub3, x1, y1, x2, y2, v0], {X:ob})
+      return _pi1, _pi_sub1, _pi_sub2, _pi_sub3, _x1, _y1, _x2, _y2, _v, [] #dummy state
 
     def value(ob, *_args, **_kwargs):
       return sess.run(v0, {X:ob})
