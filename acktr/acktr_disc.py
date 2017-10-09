@@ -46,10 +46,10 @@ class Model(object):
 
     logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A) \
              * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi2, labels=A2) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.x1, labels=X1) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.y1, labels=Y1) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.x2, labels=X2) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.y2, labels=Y2)
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
+             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
 
     self.logits = logits = train_model.pi
 
@@ -127,6 +127,7 @@ class Runner(object):
     nh, nw, nc = (64, 64, 13)
     self.nenv = nenv = env.num_envs
     self.batch_ob_shape = (nenv*nsteps, nc*nstack, nh, nw)
+    self.batch_coord_shape = (nenv*nsteps, 64)
     self.obs = np.zeros((nenv, nc*nstack, nh, nw), dtype=np.uint8)
     self.available_actions = None
     self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
@@ -150,10 +151,38 @@ class Runner(object):
       for action_num in list:
         self.base_act_mask[env_num][action_num] = 1
 
-  def valid_base_action(self, base_action):
+  def valid_base_action(self, base_actions):
     for env_num, list in enumerate(self.available_actions):
-      if base_action[env_num] not in list:
-        base_action[env_num] = np.random.choice(list)
+      if base_actions[env_num] not in list:
+        base_actions[env_num] = np.random.choice(list)
+    return base_actions
+
+  def get_sub_act_mask(self, base_action_spec):
+    sub_act_mask = np.zeros((self.nenv, 500))
+    for env_num, spec in enumerate(base_action_spec):
+      if(len(spec.args)>0):
+        sub_act_len = spec.args[0].sizes[0]
+        print("arg[0].sizes.sizes[0]: ", spec.args[0].sizes[0])
+        sub_act_mask[env_num][0:sub_act_len] = 1
+    return sub_act_mask
+
+  def construct_action(self, base_actions, base_action_spec, sub_actions, x1, y1, x2, y2):
+    actions = []
+    for env_num, spec in enumerate(base_action_spec):
+      print("spec", spec.args)
+      args = []
+      for arg_idx, arg in enumerate(spec.args):
+        if(arg_idx == 0):
+          args.append(sub_actions[env_num])
+        elif(arg_idx == 1):
+          args.append([x1[env_num], y1[env_num]])
+        elif(arg_idx == 2):
+          args.append([x2[env_num], y2[env_num]])
+
+      action = sc2_actions.FunctionCall(base_actions[env_num], args)
+      actions.append(action)
+
+    return actions
 
   def run(self):
     mb_obs, mb_rewards, mb_base_actions, mb_sub_actions,\
@@ -166,14 +195,20 @@ class Runner(object):
       pi1, pi2, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
       #avail = self.env.available_actions()
 
-      base_action = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
-      base_action = self.valid_base_action(base_action)
-      sc2_actions.FUNCTIONS[base_action]
+      base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
+      base_actions = self.valid_base_action(base_actions)
+      print("base_actions : ", base_actions)
+      base_action_spec = self.env.action_spec(base_actions)
+      print("base_action_spec : ", base_action_spec)
+      sub_act_mask = self.get_sub_act_mask(base_action_spec)
+      sub_actions = np.argmax(pi2 * sub_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
+      actions = self.construct_action(base_actions, base_action_spec, sub_actions, x1, y1, x2, y2)
+      #sc2_actions.FUNCTIONS[base_action]
       #sub_action = pi2 * avail2 #pi2 (2?, 500) * (2?, 500) masking
 
       mb_obs.append(np.copy(self.obs))
-      mb_base_actions.append(base_action)
-      mb_sub_actions.append(sub_action)
+      mb_base_actions.append(base_actions)
+      mb_sub_actions.append(sub_actions)
       mb_x1.append(x1)
       mb_y1.append(y1)
       mb_x2.append(x2)
@@ -182,11 +217,11 @@ class Runner(object):
       mb_dones.append(self.dones)
 
       #obs, rewards, dones, _ = self.env.step(actions)
-      actions = [sc2_actions.FunctionCall(base_action, [[sub_action], [x1, y1], [x2, y2]])]
-
+      #actions = [sc2_actions.FunctionCall(base_action, [[sub_action], [x1, y1], [x2, y2]])]
 
       #infos = availbale_actions
       obs, rewards, dones, available_actions = self.env.step(actions=actions)
+      self.update_available(available_actions)
 
       self.states = states
       self.dones = dones
@@ -201,6 +236,11 @@ class Runner(object):
     mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
     mb_base_actions = np.asarray(mb_base_actions, dtype=np.int32).swapaxes(1, 0)
     mb_sub_actions = np.asarray(mb_sub_actions, dtype=np.int32).swapaxes(1, 0)
+    mb_x1 = np.asarray(mb_x1, dtype=np.int32).swapaxes(1, 0)
+    mb_y1 = np.asarray(mb_y1, dtype=np.int32).swapaxes(1, 0)
+    mb_x2 = np.asarray(mb_x2, dtype=np.int32).swapaxes(1, 0)
+    mb_y2 = np.asarray(mb_y2, dtype=np.int32).swapaxes(1, 0)
+
     mb_values = np.asarray(mb_values, dtype=np.float32).swapaxes(1, 0)
     mb_dones = np.asarray(mb_dones, dtype=np.bool).swapaxes(1, 0)
     mb_masks = mb_dones[:, :-1]
@@ -218,6 +258,10 @@ class Runner(object):
     mb_rewards = mb_rewards.flatten()
     mb_base_actions = mb_base_actions.flatten()
     mb_sub_actions = mb_sub_actions.flatten()
+    mb_x1 = mb_x1.flatten()
+    mb_y1 = mb_y1.flatten()
+    mb_x2 = mb_x2.flatten()
+    mb_y2 = mb_y2.flatten()
 
     mb_values = mb_values.flatten()
     mb_masks = mb_masks.flatten()

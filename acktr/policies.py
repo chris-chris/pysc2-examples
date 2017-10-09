@@ -16,7 +16,7 @@ class CnnPolicy(object):
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
-      h = conv(tf.cast(X, tf.float32)/255., 'c1', nf=16, rf=5, stride=4, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 16
+      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=4, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 16
       h2 = conv(h, 'c2', nf=32, rf=3, stride=2, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 32
       h3 = conv_to_fc(h2) # 8192
       h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # 2, 256
@@ -26,11 +26,15 @@ class CnnPolicy(object):
 
       # 1 x 1 convolution for dimensionality reduction
       xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      x1 = xy1[:,:,0,0]
-      y1 = xy1[:,0,:,0]
+      pi_x1 = xy1[:,:,0,0]
+      x1 = sample(pi_x1)
+      pi_y1 = xy1[:,0,:,0]
+      y1 = sample(pi_y1)
       xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      x2 = xy2[:,:,0,0]
-      y2 = xy2[:,0,:,0]
+      pi_x2 = xy2[:,:,0,0]
+      x2 = sample(pi_x2)
+      pi_y2 = xy2[:,0,:,0]
+      y2 = sample(pi_y2)
 
     v0 = vf[:, 0]
     a0 = sample(pi)
@@ -47,10 +51,10 @@ class CnnPolicy(object):
     self.X = X
     self.pi = pi
     self.pi2 = pi2
-    self.x1 = x1
-    self.y1 = y1
-    self.x2 = x2
-    self.y2 = y2
+    self.pi_x1 = pi_x1
+    self.pi_y1 = pi_y1
+    self.pi_x2 = pi_x2
+    self.pi_y2 = pi_y2
     self.vf = vf
     self.step = step
     self.value = value
