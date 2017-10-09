@@ -12,7 +12,9 @@ class CnnPolicy(object):
     nh, nw, nc = (64,64,13)
     ob_shape = (nbatch, nc*nstack, nh, nw)
     nact = 524
-    nact2 = 500
+    nsub1 = 2
+    nsub2 = 10
+    nsub3 = 500
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
@@ -21,7 +23,10 @@ class CnnPolicy(object):
       h3 = conv_to_fc(h2) # 8192
       h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # 2, 256
       pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # 2, 524
-      pi2 = fc(h4, 'pi2', nact2, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub1 = fc(h4, 'pi_sub1', nsub1, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 2
+      pi_sub2 = fc(h4, 'pi_sub2', nsub2, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 10
+      pi_sub3 = fc(h4, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+
       vf = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # 2, 1
 
       # 1 x 1 convolution for dimensionality reduction
@@ -50,7 +55,9 @@ class CnnPolicy(object):
 
     self.X = X
     self.pi = pi
-    self.pi2 = pi2
+    self.pi_sub1 = pi_sub1
+    self.pi_sub2 = pi_sub2
+    self.pi_sub3 = pi_sub3
     self.pi_x1 = pi_x1
     self.pi_y1 = pi_y1
     self.pi_x2 = pi_x2

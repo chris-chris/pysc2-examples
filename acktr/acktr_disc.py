@@ -30,7 +30,9 @@ class Model(object):
     #nact = ac_space.n
     nbatch = nenvs * nsteps
     A = tf.placeholder(tf.int32, [nbatch])
-    A2 = tf.placeholder(tf.int32, [nbatch])
+    SUB1 = tf.placeholder(tf.int32, [nbatch])
+    SUB2 = tf.placeholder(tf.int32, [nbatch])
+    SUB3 = tf.placeholder(tf.int32, [nbatch])
     X1 = tf.placeholder(tf.int32, [nbatch])
     Y1 = tf.placeholder(tf.int32, [nbatch])
     X2 = tf.placeholder(tf.int32, [nbatch])
@@ -45,11 +47,13 @@ class Model(object):
     self.model2 = train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
 
     logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi2, labels=A2) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub1, labels=SUB1) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub2, labels=SUB2) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
 
     self.logits = logits = train_model.pi
 
@@ -80,12 +84,12 @@ class Model(object):
     self.q_runner = q_runner
     self.lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
-    def train(obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values):
+    def train(obs, states, rewards, masks, actions, sub1, sub2, sub3, x1, y1, x2, y2, values):
       advs = rewards - values
       for step in range(len(obs)):
         cur_lr = self.lr.value()
 
-      td_map = {train_model.X:obs, A:actions, A2:actions2, X1:x1, Y1:y1, X2:x2, Y2:y2, ADV:advs, R:rewards, PG_LR:cur_lr}
+      td_map = {train_model.X:obs, A:actions, SUB1:sub1, SUB2:sub2, SUB3:sub3, X1:x1, Y1:y1, X2:x2, Y2:y2, ADV:advs, R:rewards, PG_LR:cur_lr}
       if states != []:
         td_map[train_model.S] = states
         td_map[train_model.M] = masks
@@ -158,26 +162,41 @@ class Runner(object):
     return base_actions
 
   def get_sub_act_mask(self, base_action_spec):
-    sub_act_mask = np.zeros((self.nenv, 500))
+    sub1_act_mask = np.zeros((self.nenv, 2))
+    sub2_act_mask = np.zeros((self.nenv, 10))
+    sub3_act_mask = np.zeros((self.nenv, 500))
     for env_num, spec in enumerate(base_action_spec):
-      if(len(spec.args)>0):
-        sub_act_len = spec.args[0].sizes[0]
-        print("arg[0].sizes.sizes[0]: ", spec.args[0].sizes[0])
-        sub_act_mask[env_num][0:sub_act_len] = 1
-    return sub_act_mask
+      for arg_idx, arg in enumerate(spec.args):
+        if(len(arg.sizes) == 1 and arg.sizes[0] == 2):
+          sub_act_len = spec.args[arg_idx].sizes[0]
+          sub1_act_mask[env_num][0:sub_act_len] = 1
+        elif(len(arg.sizes) == 1 and arg.sizes[0] == 500):
+          sub_act_len = spec.args[arg_idx].sizes[0]
+          sub3_act_mask[env_num][0:sub_act_len] = 1
+        elif(len(arg.sizes) == 1):
+          sub_act_len = spec.args[arg_idx].sizes[0]
+          sub2_act_mask[env_num][0:sub_act_len] = 1
 
-  def construct_action(self, base_actions, base_action_spec, sub_actions, x1, y1, x2, y2):
+    return sub1_act_mask, sub2_act_mask, sub3_act_mask
+
+  def construct_action(self, base_actions, base_action_spec, sub1, sub2, sub3, x1, y1, x2, y2):
     actions = []
     for env_num, spec in enumerate(base_action_spec):
       print("spec", spec.args)
       args = []
       for arg_idx, arg in enumerate(spec.args):
-        if(arg_idx == 0):
-          args.append(sub_actions[env_num])
-        elif(arg_idx == 1):
+        if(len(arg.sizes) == 1 and arg.sizes[0] == 2): # size : 2
+          args.append([sub1[env_num]])
+        elif(len(arg.sizes) == 1 and arg.sizes[0] == 500): # size : 500
+          args.append([sub3[env_num]])
+        elif(len(arg.sizes) == 1): # size : 3 ~ 10
+          args.append([sub2[env_num]])
+        elif(len(arg.sizes) == 2 and arg_idx in (0, 1)):
           args.append([x1[env_num], y1[env_num]])
-        elif(arg_idx == 2):
+        elif(len(arg.sizes) == 2):
           args.append([x2[env_num], y2[env_num]])
+        else:
+          raise NotImplementedError("cannot construct this arg", spec.args)
 
       action = sc2_actions.FunctionCall(base_actions[env_num], args)
       actions.append(action)
@@ -185,14 +204,15 @@ class Runner(object):
     return actions
 
   def run(self):
-    mb_obs, mb_rewards, mb_base_actions, mb_sub_actions,\
+    mb_obs, mb_rewards, mb_base_actions, \
+    mb_sub1_actions, mb_sub2_actions, mb_sub3_actions,\
       mb_x1, mb_y1, mb_x2, mb_y2, mb_values, mb_dones \
-      = [],[],[],[],[],[],[],[],[],[]
+      = [],[],[],[],[],[],[],[],[],[],[],[]
 
     mb_states = self.states
     for n in range(self.nsteps):
       #pi, pi2, x1, y1, x2, y2, v0
-      pi1, pi2, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
+      pi1, pi_sub1, pi_sub2, pi_sub3, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
       #avail = self.env.available_actions()
 
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
@@ -200,15 +220,20 @@ class Runner(object):
       print("base_actions : ", base_actions)
       base_action_spec = self.env.action_spec(base_actions)
       print("base_action_spec : ", base_action_spec)
-      sub_act_mask = self.get_sub_act_mask(base_action_spec)
-      sub_actions = np.argmax(pi2 * sub_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
-      actions = self.construct_action(base_actions, base_action_spec, sub_actions, x1, y1, x2, y2)
+      sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)
+      sub1_actions = np.argmax(pi_sub1 * sub1_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
+      sub2_actions = np.argmax(pi_sub2 * sub2_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
+      sub3_actions = np.argmax(pi_sub3 * sub3_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
+      actions = self.construct_action(base_actions, base_action_spec, sub1_actions, sub2_actions, sub3_actions, x1, y1, x2, y2)
       #sc2_actions.FUNCTIONS[base_action]
       #sub_action = pi2 * avail2 #pi2 (2?, 500) * (2?, 500) masking
 
       mb_obs.append(np.copy(self.obs))
       mb_base_actions.append(base_actions)
-      mb_sub_actions.append(sub_actions)
+      mb_sub1_actions.append(sub1_actions)
+      mb_sub2_actions.append(sub2_actions)
+      mb_sub3_actions.append(sub3_actions)
+
       mb_x1.append(x1)
       mb_y1.append(y1)
       mb_x2.append(x2)
@@ -216,10 +241,7 @@ class Runner(object):
       mb_values.append(values)
       mb_dones.append(self.dones)
 
-      #obs, rewards, dones, _ = self.env.step(actions)
-      #actions = [sc2_actions.FunctionCall(base_action, [[sub_action], [x1, y1], [x2, y2]])]
-
-      #infos = availbale_actions
+      print("final acitons : ", actions)
       obs, rewards, dones, available_actions = self.env.step(actions=actions)
       self.update_available(available_actions)
 
@@ -235,7 +257,10 @@ class Runner(object):
     mb_obs = np.asarray(mb_obs, dtype=np.uint8).swapaxes(1, 0).reshape(self.batch_ob_shape)
     mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
     mb_base_actions = np.asarray(mb_base_actions, dtype=np.int32).swapaxes(1, 0)
-    mb_sub_actions = np.asarray(mb_sub_actions, dtype=np.int32).swapaxes(1, 0)
+    mb_sub1_actions = np.asarray(mb_sub1_actions, dtype=np.int32).swapaxes(1, 0)
+    mb_sub2_actions = np.asarray(mb_sub2_actions, dtype=np.int32).swapaxes(1, 0)
+    mb_sub3_actions = np.asarray(mb_sub3_actions, dtype=np.int32).swapaxes(1, 0)
+
     mb_x1 = np.asarray(mb_x1, dtype=np.int32).swapaxes(1, 0)
     mb_y1 = np.asarray(mb_y1, dtype=np.int32).swapaxes(1, 0)
     mb_x2 = np.asarray(mb_x2, dtype=np.int32).swapaxes(1, 0)
@@ -257,7 +282,9 @@ class Runner(object):
       mb_rewards[n] = rewards
     mb_rewards = mb_rewards.flatten()
     mb_base_actions = mb_base_actions.flatten()
-    mb_sub_actions = mb_sub_actions.flatten()
+    mb_sub1_actions = mb_sub1_actions.flatten()
+    mb_sub2_actions = mb_sub2_actions.flatten()
+    mb_sub3_actions = mb_sub3_actions.flatten()
     mb_x1 = mb_x1.flatten()
     mb_y1 = mb_y1.flatten()
     mb_x2 = mb_x2.flatten()
@@ -266,7 +293,7 @@ class Runner(object):
     mb_values = mb_values.flatten()
     mb_masks = mb_masks.flatten()
     return mb_obs, mb_states, mb_rewards, mb_masks, \
-           mb_base_actions, mb_sub_actions,\
+           mb_base_actions, mb_sub1_actions, mb_sub2_actions, mb_sub3_actions,\
            mb_x1, mb_y1, mb_x2, mb_y2, mb_values
 
 def learn(policy, env, seed, total_timesteps=int(40e6),
@@ -304,10 +331,10 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
   tstart = time.time()
   enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
   for update in range(1, total_timesteps//nbatch+1):
-    obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values = runner.run()
+    obs, states, rewards, masks, actions, sub1_actions, sub2_actions, sub3_actions, x1, y1, x2, y2, values = runner.run()
     # (obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values)
     policy_loss, value_loss, policy_entropy \
-      = model.train(obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values)
+      = model.train(obs, states, rewards, masks, actions, sub1_actions, sub2_actions, sub3_actions, x1, y1, x2, y2, values)
     model.old_obs = obs
     nseconds = time.time()-tstart
     fps = int((update*nbatch)/nseconds)
