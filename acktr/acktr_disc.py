@@ -125,6 +125,7 @@ class Runner(object):
     self.env = env
     self.model = model
     nh, nw, nc = (64, 64, 13)
+    self.nsteps = nsteps
     self.nenv = nenv = env.num_envs
     self.batch_ob_shape = (nenv*nsteps, nc*nstack, nh, nw)
     self.batch_coord_shape = (nenv*nsteps, 64)
@@ -135,13 +136,12 @@ class Runner(object):
     self.update_obs(obs) # (2,13,64,64)
     self.update_available(available_actions)
     self.gamma = gamma
-    self.nsteps = nsteps
     self.states = model.initial_state
     self.dones = [False for _ in range(nenv)]
 
   def update_obs(self, obs):
-    self.obs = np.roll(self.obs, shift=-1, axis=1)
-    self.obs[:, -1, :, :] = obs[:, 0, :, :]
+    self.obs = np.roll(self.obs, shift=-13*self.nsteps, axis=1)
+    self.obs[:, -13:, :, :] = obs[:, :, :, :]
 
   def update_available(self, _available_actions):
     self.available_actions = _available_actions

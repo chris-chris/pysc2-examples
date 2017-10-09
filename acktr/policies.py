@@ -59,64 +59,6 @@ class CnnPolicy(object):
     self.step = step
     self.value = value
 
-class CnnPolicy2(object):
-
-  def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
-    nbatch = nenv*nsteps
-    nh, nw, nc = ob_space
-    ob_shape = (nbatch, nh, nw, nc*nstack)
-    nact = 6 # StarCraft II total base actions
-    #nact2 = 10 # StarCraft II 2nd action param
-    X = tf.placeholder(tf.uint8, ob_shape) #obs
-    #AVAIL = tf.placeholder(tf.uint8, [nbatch, 524]) #one-hot encoded available actions
-    # [0, 0, 1, 0, 1, 0, 0, 0, ... 1]
-    with tf.variable_scope("model", reuse=reuse):
-      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=1, stride=1, init_scale=np.sqrt(2))
-      h2 = conv(h, 'c2', nf=32, rf=1, stride=1, init_scale=np.sqrt(2))
-      h3 = conv_to_fc(h2)
-      h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2))
-      pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524)
-      #pi2 = fc(h4, 'pi2', nact2, act=lambda x:x) # ( nenv * nsteps, 500)
-      vf = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1)
-
-      # 1 x 1 convolution for dimensionality reduction
-      # xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      # x1 = xy1[:,:,0,0]
-      # y1 = xy1[:,0,:,0]
-      # xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      # x2 = xy2[:,:,0,0]
-      # y2 = xy2[:,0,:,0]
-
-    v0 = vf[:, 0]
-    #pi = pi * AVAIL # masking base action space by [available actions]
-    a0 = sample(pi)
-    #total_a2 = nact2
-    #AVAIL2 = np.concatenate(([1]*1,[0]*10), axis=0)
-    #a2_size = actions.FUNCTIONS[a0].args[0].sizes[0]
-    #pi2 = pi2 * AVAIL2 # TODO : masking 2nd action param 0 ~ 500
-    #a1 = sample(pi2)
-    #action = [pi, pi2, x1, y1, x2, y2]
-
-    self.initial_state = [] #not stateful
-
-    def step(ob, *_args, **_kwargs):
-      a, v = sess.run([a0, v0], {X:ob})
-      return a, v, [] #dummy state
-
-    def value(ob, *_args, **_kwargs):
-      return sess.run(v0, {X:ob})
-
-    self.X = X
-    self.pi = pi
-    # self.pi2 = pi2
-    # self.x1 = x1
-    # self.y1 = y1
-    # self.x2 = x2
-    # self.y2 = y2
-    self.vf = vf
-    self.step = step
-    self.value = value
-
 class GaussianMlpPolicy(object):
   def __init__(self, ob_dim, ac_dim):
     # Here we'll construct a bunch of expressions, which will be used in two places:
