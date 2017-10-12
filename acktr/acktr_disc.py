@@ -125,7 +125,7 @@ class Model(object):
 
 class Runner(object):
 
-  def __init__(self, env, model, nsteps, nstack, gamma):
+  def __init__(self, env, model, nsteps, nstack, gamma, callback=None):
     self.env = env
     self.model = model
     nh, nw, nc = (64, 64, 13)
@@ -142,6 +142,11 @@ class Runner(object):
     self.gamma = gamma
     self.states = model.initial_state
     self.dones = [False for _ in range(nenv)]
+    self.total_reward = [0.0 for _ in range(nenv)]
+    self.episode_rewards = [0.0]
+    self.episodes = 0
+    self.steps = 0
+    self.callback = callback
 
   def update_obs(self, obs):
     self.obs = np.roll(self.obs, shift=-13*self.nsteps, axis=1)
@@ -248,8 +253,24 @@ class Runner(object):
       self.states = states
       self.dones = dones
       for n, done in enumerate(dones):
+        self.total_reward[n] += float(rewards[n])
         if done:
           self.obs[n] = self.obs[n]*0
+          self.episodes += 1
+          num_episodes = self.episodes
+          self.episode_rewards.append(self.total_reward[n])
+          mean_100ep_reward = round(np.mean(self.episode_rewards[-101:-1]), 1)
+
+          print("env %s done! reward : %s mean_100ep_reward : %s " % (n, self.total_reward[n], mean_100ep_reward))
+          logger.record_tabular("reward", self.total_reward[n])
+          logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
+          logger.record_tabular("steps", self.steps)
+          logger.record_tabular("episodes", self.episodes)
+          logger.dump_tabular()
+
+          if self.callback is not None:
+            self.callback(locals(), globals())
+
       self.update_obs(obs)
       mb_rewards.append(rewards)
     mb_dones.append(self.dones)
@@ -300,7 +321,8 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
           gamma=0.99, log_interval=1, nprocs=32, nsteps=2,
           nstack=4, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0,
           lr=0.25, max_grad_norm=0.5,
-          kfac_clip=0.001, save_interval=None, lrschedule='linear'):
+          kfac_clip=0.001, save_interval=None, lrschedule='linear',
+          callback=None):
   tf.reset_default_graph()
   set_global_seeds(seed)
 
@@ -326,7 +348,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
       fh.write(cloudpickle.dumps(make_model))
   model = make_model()
   print("make_model complete!")
-  runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma)
+  runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma, callback=callback)
   nbatch = nenvs*nsteps
   tstart = time.time()
   enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)

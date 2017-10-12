@@ -31,7 +31,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string("map", "CollectMineralShards", "Name of a map to use to play.")
 start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
 flags.DEFINE_string("log", "tensorboard", "logging type(stdout, tensorboard)")
-flags.DEFINE_string("algorithm", "deepq", "RL algorithm to use.")
+flags.DEFINE_string("algorithm", "acktr", "RL algorithm to use.")
 flags.DEFINE_integer("timesteps", 2000000, "Steps to train")
 flags.DEFINE_float("exploration_fraction", 0.5, "Exploration Fraction")
 flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
@@ -119,7 +119,6 @@ def main():
     num_timesteps //= 4
 
     seed=0
-    num_cpu=2
 
     # def make_env(rank):
     #   # env = sc2_env.SC2Env(
@@ -149,10 +148,10 @@ def main():
     # agent_controller = AgentController(agents)
 
     #set_global_seeds(seed)
-    env = SubprocVecEnv(num_cpu, FLAGS.map)
+    env = SubprocVecEnv(FLAGS.num_cpu, FLAGS.map)
 
     policy_fn = CnnPolicy
-    acktr_disc.learn(policy_fn, env, seed, total_timesteps=num_timesteps, nprocs=num_cpu)
+    acktr_disc.learn(policy_fn, env, seed, total_timesteps=num_timesteps, nprocs=FLAGS.num_cpu)
 
 from pysc2.env import environment
 import numpy as np

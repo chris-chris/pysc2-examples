@@ -1,4 +1,5 @@
 import sys
+import os
 import datetime
 
 import gflags as flags
@@ -25,7 +26,14 @@ flags.DEFINE_integer("timesteps", 2000000, "Steps to train")
 flags.DEFINE_float("exploration_fraction", 0.5, "Exploration Fraction")
 flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
 flags.DEFINE_boolean("dueling", True, "dueling")
-flags.DEFINE_float("lr", 0.0005, "Learning rate")
+flags.DEFINE_float("lr", 0.001, "Learning rate")
+
+PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
+
+max_mean_reward = 0
+last_filename = ""
+
+start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
 
 
 def main():
@@ -89,9 +97,75 @@ def main():
       target_network_update_freq=1000,
       gamma=0.99,
       prioritized_replay=True,
-      demo_replay=demo_replay
+      callback=deepq_callback
     )
     act.save("defeat_zerglings.pkl")
+
+def deepq_callback(locals, globals):
+  #pprint.pprint(locals)
+  global max_mean_reward, last_filename
+  if('done' in locals and locals['done'] == True):
+    if('mean_100ep_reward' in locals
+       and locals['num_episodes'] >= 10
+       and locals['mean_100ep_reward'] > max_mean_reward
+       ):
+      print("mean_100ep_reward : %s max_mean_reward : %s" %
+            (locals['mean_100ep_reward'], max_mean_reward))
+
+      if(not os.path.exists(os.path.join(PROJ_DIR,'models/deepq/'))):
+        try:
+          os.mkdir(os.path.join(PROJ_DIR,'models/'))
+        except Exception as e:
+          print(str(e))
+        try:
+          os.mkdir(os.path.join(PROJ_DIR,'models/deepq/'))
+        except Exception as e:
+          print(str(e))
+
+      if(last_filename != ""):
+        os.remove(last_filename)
+        print("delete last model file : %s" % last_filename)
+
+      max_mean_reward = locals['mean_100ep_reward']
+      act = deepq.ActWrapper(locals['act'], locals['act_params'])
+
+      filename = os.path.join(PROJ_DIR,'models/deepq/zergling_%s.pkl' % locals['mean_100ep_reward'])
+      act.save(filename)
+      print("save best mean_100ep_reward model to %s" % filename)
+      last_filename = filename
+
+def acktr_callback(locals, globals):
+  global max_mean_reward, last_filename
+  #pprint.pprint(locals)
+
+  if('mean_100ep_reward' in locals
+     and locals['num_episodes'] >= 10
+     and locals['mean_100ep_reward'] > max_mean_reward
+     ):
+    print("mean_100ep_reward : %s max_mean_reward : %s" %
+          (locals['mean_100ep_reward'], max_mean_reward))
+
+    if(not os.path.exists(os.path.join(PROJ_DIR,'models/acktr/'))):
+      try:
+        os.mkdir(os.path.join(PROJ_DIR,'models/'))
+      except Exception as e:
+        print(str(e))
+      try:
+        os.mkdir(os.path.join(PROJ_DIR,'models/acktr/'))
+      except Exception as e:
+        print(str(e))
+
+    if(last_filename != ""):
+      os.remove(last_filename)
+      print("delete last model file : %s" % last_filename)
+
+    max_mean_reward = locals['mean_100ep_reward']
+    model = locals['model']
+
+    filename = os.path.join(PROJ_DIR,'models/acktr/zergling_%s.pkl' % locals['mean_100ep_reward'])
+    model.save(filename)
+    print("save best mean_100ep_reward model to %s" % filename)
+    last_filename = filename
 
 
 if __name__ == '__main__':
