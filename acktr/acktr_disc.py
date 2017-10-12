@@ -178,13 +178,13 @@ class Runner(object):
       for arg_idx, arg in enumerate(spec.args):
         if(len(arg.sizes) == 1 and arg.sizes[0] == 2):
           sub_act_len = spec.args[arg_idx].sizes[0]
-          sub1_act_mask[env_num][0:sub_act_len] = 1
+          sub1_act_mask[env_num][0:sub_act_len-1] = 1
         elif(len(arg.sizes) == 1 and arg.sizes[0] == 500):
           sub_act_len = spec.args[arg_idx].sizes[0]
-          sub3_act_mask[env_num][0:sub_act_len] = 1
+          sub3_act_mask[env_num][0:sub_act_len-1] = 1
         elif(len(arg.sizes) == 1):
           sub_act_len = spec.args[arg_idx].sizes[0]
-          sub2_act_mask[env_num][0:sub_act_len] = 1
+          sub2_act_mask[env_num][0:sub_act_len-1] = 1
 
     return sub1_act_mask, sub2_act_mask, sub3_act_mask
 
