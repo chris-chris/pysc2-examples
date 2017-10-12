@@ -41,7 +41,7 @@ def main():
 
   logdir = "tensorboard"
   if(FLAGS.algorithm == "deepq"):
-    logdir = "tensorboard/%s/%s_%s_prio%s_duel%s_lr%s/%s" % (
+    logdir = "tensorboard/zergling/%s/%s_%s_prio%s_duel%s_lr%s/%s" % (
       FLAGS.algorithm,
       FLAGS.timesteps,
       FLAGS.exploration_fraction,
@@ -51,7 +51,7 @@ def main():
       start_time
     )
   elif(FLAGS.algorithm == "acktr"):
-    logdir = "tensorboard/%s/%s_num%s_lr%s/%s" % (
+    logdir = "tensorboard/zergling/%s/%s_num%s_lr%s/%s" % (
       FLAGS.algorithm,
       FLAGS.timesteps,
       FLAGS.num_cpu,
