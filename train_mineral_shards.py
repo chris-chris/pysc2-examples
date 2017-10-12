@@ -242,10 +242,13 @@ def deepq_callback(locals, globals):
         print("delete last model file : %s" % last_filename)
 
       max_mean_reward = locals['mean_100ep_reward']
-      act = deepq.ActWrapper(locals['act'], locals['act_params'])
+      act_x = deepq_mineral_shards.ActWrapper(locals['act_x'])
+      act_y = deepq_mineral_shards.ActWrapper(locals['act_y'])
 
-      filename = os.path.join(PROJ_DIR,'models/deepq/zergling_%s.pkl' % locals['mean_100ep_reward'])
-      act.save(filename)
+      filename = os.path.join(PROJ_DIR,'models/deepq/mineral_x_%s.pkl' % locals['mean_100ep_reward'])
+      act_x.save(filename)
+      filename = os.path.join(PROJ_DIR,'models/deepq/mineral_y_%s.pkl' % locals['mean_100ep_reward'])
+      act_y.save(filename)
       print("save best mean_100ep_reward model to %s" % filename)
       last_filename = filename
 
@@ -277,7 +280,7 @@ def acktr_callback(locals, globals):
     max_mean_reward = locals['mean_100ep_reward']
     model = locals['model']
 
-    filename = os.path.join(PROJ_DIR,'models/acktr/zergling_%s.pkl' % locals['mean_100ep_reward'])
+    filename = os.path.join(PROJ_DIR,'models/acktr/mineral_%s.pkl' % locals['mean_100ep_reward'])
     model.save(filename)
     print("save best mean_100ep_reward model to %s" % filename)
     last_filename = filename
