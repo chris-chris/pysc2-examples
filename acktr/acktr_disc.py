@@ -153,6 +153,7 @@ class Runner(object):
     self.obs[:, -13:, :, :] = obs[:, :, :, :]
 
   def update_available(self, _available_actions):
+    print("update_available : ", _available_actions)
     self.available_actions = _available_actions
     # avail = np.array([[0,1,2,3,4,7], [0,1,2,3,4,7]])
     self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
@@ -221,8 +222,9 @@ class Runner(object):
       #avail = self.env.available_actions()
 
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
+      print("base_actions : ", base_actions)
       base_actions = self.valid_base_action(base_actions)
-      #print("base_actions : ", base_actions)
+      print("valid_base_actions : ", base_actions)
       base_action_spec = self.env.action_spec(base_actions)
       #print("base_action_spec : ", base_action_spec)
       sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)

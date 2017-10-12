@@ -82,7 +82,7 @@ class SubprocVecEnv(VecEnv):
 
         self.remotes[0].send(('get_spaces', 1))
         self.action_space, self.observation_space = self.remotes[0].recv()
-        print("action_space: ", self.action_space, " observation_space: ", self.observation_space)
+        #print("action_space: ", self.action_space, " observation_space: ", self.observation_space)
 
     def step(self, actions):
         for remote, action in zip(self.remotes, actions):
