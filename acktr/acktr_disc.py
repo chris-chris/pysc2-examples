@@ -164,6 +164,9 @@ class Runner(object):
   def valid_base_action(self, base_actions):
     for env_num, list in enumerate(self.available_actions):
       if base_actions[env_num] not in list:
+        if 0 in list:
+          list.remove(0)
+        print("env_num", env_num, " argmax is not valid. random pick ", list)
         base_actions[env_num] = np.random.choice(list)
     return base_actions
 
