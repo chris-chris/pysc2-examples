@@ -127,7 +127,7 @@ def deepq_callback(locals, globals):
         print("delete last model file : %s" % last_filename)
 
       max_mean_reward = locals['mean_100ep_reward']
-      act = deepq.ActWrapper(locals['act'], locals['act_params'])
+      act = dqfd.ActWrapper(locals['act'])
 
       filename = os.path.join(PROJ_DIR,'models/deepq/zergling_%s.pkl' % locals['mean_100ep_reward'])
       act.save(filename)
