@@ -26,10 +26,10 @@ def worker(remote, map_name):
 
                 if done:
                     result = env.reset()
-                    ob = result[0].observation["screen"]
-                    reward = result[0].reward
-                    done = result[0].step_type == environment.StepType.LAST
-                    info = result[0].observation["available_actions"]
+                    # ob = result[0].observation["screen"]
+                    # reward = result[0].reward
+                    # done = result[0].step_type == environment.StepType.LAST
+                    # info = result[0].observation["available_actions"]
                 remote.send((ob, reward, done, info))
             elif cmd == 'reset':
 
