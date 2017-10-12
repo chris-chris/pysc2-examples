@@ -89,14 +89,14 @@ class SubprocVecEnv(VecEnv):
             remote.send(('step', [action]))
         results = [remote.recv() for remote in self.remotes]
         obs, rews, dones, infos = zip(*results)
-        return np.stack(obs), np.stack(rews), np.stack(dones), np.stack(infos)
+        return np.stack(obs), np.stack(rews), np.stack(dones), infos
 
     def reset(self):
         for remote in self.remotes:
             remote.send(('reset', None))
         results = [remote.recv() for remote in self.remotes]
         obs, rews, dones, infos = zip(*results)
-        return np.stack(obs), np.stack(rews), np.stack(dones), np.stack(infos)
+        return np.stack(obs), np.stack(rews), np.stack(dones), infos
 
     def action_spec(self, base_actions):
         for remote, base_action in zip(self.remotes, base_actions):
