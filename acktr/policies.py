@@ -9,7 +9,7 @@ class CnnPolicy(object):
 
   def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
     nbatch = nenv*nsteps
-    nh, nw, nc = (64,64,13)
+    nh, nw, nc = (64,64,1)
     ob_shape = (nbatch, nc*nstack, nh, nw)
     nact = 524
     nsub3 = 2

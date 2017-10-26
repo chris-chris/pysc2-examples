@@ -179,7 +179,7 @@ class AgentController(object):
 
   def __init__(self, agents):
     self.agents = agents
-    self.observation_space = (64, 64, 13)
+    self.observation_space = (64, 64, 1)
 
   def step(self, actions):
     obs, rewards, dones, infos = [], [], [], []

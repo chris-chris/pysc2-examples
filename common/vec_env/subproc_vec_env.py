@@ -7,19 +7,25 @@ from common.spaces.multi_discrete import MultiDiscrete
 from common.spaces.tuple_space import Tuple
 from common.spaces.discrete import Discrete
 from pysc2.env import sc2_env
+from pysc2.lib import features
+
+_PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
+
+
 
 def worker(remote, map_name):
 
     with sc2_env.SC2Env(
         map_name,
-        step_mul=1) as env:
+        step_mul=1,
+    ) as env:
 
         while True:
             cmd, data = remote.recv()
             if cmd == 'step':
-                print("action : ", data)
+                print("remote : ", remote, " action : ", data)
                 result = env.step(actions=data)
-                ob = result[0].observation["screen"]
+                ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
                 reward = result[0].reward
                 done = result[0].step_type == environment.StepType.LAST
                 info = result[0].observation["available_actions"]
@@ -30,15 +36,11 @@ def worker(remote, map_name):
                     # reward = result[0].reward
                     # done = result[0].step_type == environment.StepType.LAST
                     info = result[0].observation["available_actions"]
-                print("ob : ", ob.shape)
-                print("reward : ", reward)
-                print("done : ", done)
-                print("info : ", info)
                 remote.send((ob, reward, done, info))
             elif cmd == 'reset':
 
                 result = env.reset()
-                ob = result[0].observation["screen"]
+                ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
                 reward = result[0].reward
                 done = result[0].step_type == environment.StepType.LAST
                 info = result[0].observation["available_actions"]

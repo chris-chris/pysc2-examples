@@ -57,29 +57,48 @@ class Model(object):
     self.model = step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
     self.model2 = train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
 
+
+
     logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub4, labels=SUB4) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub5, labels=SUB5) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub6, labels=SUB6) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub7, labels=SUB7) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub8, labels=SUB8) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub9, labels=SUB9) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub10, labels=SUB10) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub11, labels=SUB11) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub12, labels=SUB12) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x0, labels=X0) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y0, labels=Y0) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
-             * tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub4, labels=SUB4) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub5, labels=SUB5) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub6, labels=SUB6) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub7, labels=SUB7) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub8, labels=SUB8) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub9, labels=SUB9) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub10, labels=SUB10) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub11, labels=SUB11) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub12, labels=SUB12) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x0, labels=X0) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y0, labels=Y0) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
+             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
 
     self.logits = logits = train_model.pi
 
     ##training loss
     pg_loss = tf.reduce_mean(ADV*logpac) * tf.reduce_mean(ADV)
-    entropy = tf.reduce_mean(cat_entropy(train_model.pi))
+    entropy = tf.reduce_mean(cat_entropy(train_model.pi)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub3)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub4)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub5)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub6)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub7)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub8)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub9)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub10)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub11)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub12)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_x0)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_y0)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_x1)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_y1)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_x2)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_y2))
+
     pg_loss = pg_loss - ent_coef * entropy
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
     train_loss = pg_loss + vf_coef * vf_loss
@@ -123,6 +142,8 @@ class Model(object):
         [pg_loss, vf_loss, entropy, train_op],
         td_map
       )
+      print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
+
       return policy_loss, value_loss, policy_entropy
 
     def save(save_path):
@@ -153,7 +174,7 @@ class Runner(object):
   def __init__(self, env, model, nsteps, nstack, gamma, callback=None):
     self.env = env
     self.model = model
-    nh, nw, nc = (64, 64, 13)
+    nh, nw, nc = (64, 64, 1)
     self.nsteps = nsteps
     self.nenv = nenv = env.num_envs
     self.batch_ob_shape = (nenv*nsteps, nc*nstack, nh, nw)
@@ -174,17 +195,18 @@ class Runner(object):
     self.callback = callback
 
   def update_obs(self, obs):
-    self.obs = np.roll(self.obs, shift=-13*self.nsteps, axis=1)
-    self.obs[:, -13:, :, :] = obs[:, :, :, :]
+    self.obs = np.roll(self.obs, shift=-1, axis=1)
+    self.obs[:, -1:, :, :] = obs[:, :, :, :]
 
   def update_available(self, _available_actions):
-    print("update_available : ", _available_actions)
+    #print("update_available : ", _available_actions)
     self.available_actions = _available_actions
     # avail = np.array([[0,1,2,3,4,7], [0,1,2,3,4,7]])
     self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
     for env_num, list in enumerate(_available_actions):
       for action_num in list:
-        self.base_act_mask[env_num][action_num] = 1
+        if action_num != 0:
+          self.base_act_mask[env_num][action_num] = 1
 
   def valid_base_action(self, base_actions):
     for env_num, list in enumerate(self.available_actions):
@@ -220,11 +242,11 @@ class Runner(object):
                        x0, y0, x1, y1, x2, y2):
     actions = []
     for env_num, spec in enumerate(base_action_spec):
-      print("spec", spec.args)
+      #print("spec", spec.args)
       args = []
       for arg_idx, arg in enumerate(spec.args):
-        print("arg", arg)
-        print("arg.id", arg.id)
+        #print("arg", arg)
+        #print("arg.id", arg.id)
         if(arg.id==0): # screen (64,64) x0, y0
           args.append([int(x0[env_num]), int(y0[env_num])])
         elif(arg.id==1): # minimap (64,64) x1, y1
@@ -262,7 +284,8 @@ class Runner(object):
   def run(self):
     mb_obs, mb_rewards, mb_base_actions, \
     mb_sub3_actions, mb_sub4_actions, mb_sub5_actions, mb_sub6_actions, \
-    mb_sub7_actions, mb_sub8_actions, mb_sub9_actions, mb_sub10_actions, mb_sub11_actions, mb_sub12_actions, \
+    mb_sub7_actions, mb_sub8_actions, mb_sub9_actions, mb_sub10_actions, \
+    mb_sub11_actions, mb_sub12_actions, \
     mb_x0, mb_y0, mb_x1, mb_y1, mb_x2, mb_y2, mb_values, mb_dones \
       = [],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]
 
@@ -271,7 +294,7 @@ class Runner(object):
       # pi, pi2, x1, y1, x2, y2, v0
       pi1, pi_sub3, pi_sub4, pi_sub5, pi_sub6, pi_sub7, pi_sub8, pi_sub9, pi_sub10, pi_sub11, pi_sub12, x0, y0, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
       # avail = self.env.available_actions()
-
+      print("pi1 : ", pi1)
       print("base_act_mask : ", self.base_act_mask)
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
       print("base_actions : ", base_actions)
@@ -315,8 +338,8 @@ class Runner(object):
       mb_sub11_actions.append(sub11_actions)
       mb_sub12_actions.append(sub12_actions)
 
-      mb_x0.append(x1)
-      mb_y0.append(y1)
+      mb_x0.append(x0)
+      mb_y0.append(y0)
       mb_x1.append(x1)
       mb_y1.append(y1)
       mb_x2.append(x2)
@@ -346,6 +369,7 @@ class Runner(object):
           logger.record_tabular("episodes", self.episodes)
           logger.dump_tabular()
 
+          model = self.model
           if self.callback is not None:
             self.callback(locals(), globals())
 
@@ -416,7 +440,7 @@ class Runner(object):
            mb_x0, mb_y0, mb_x1, mb_y1, mb_x2, mb_y2, mb_values
 
 def learn(policy, env, seed, total_timesteps=int(40e6),
-          gamma=0.99, log_interval=1, nprocs=32, nsteps=2,
+          gamma=0.99, log_interval=1, nprocs=32, nsteps=20,
           nstack=4, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0,
           lr=0.25, max_grad_norm=0.5,
           kfac_clip=0.001, save_interval=None, lrschedule='linear',
