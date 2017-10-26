@@ -12,9 +12,16 @@ class CnnPolicy(object):
     nh, nw, nc = (64,64,13)
     ob_shape = (nbatch, nc*nstack, nh, nw)
     nact = 524
-    nsub1 = 2
-    nsub2 = 10
-    nsub3 = 500
+    nsub3 = 2
+    nsub4 = 5
+    nsub5 = 10
+    nsub6 = 4
+    nsub7 = 2
+    nsub8 = 4
+    nsub9 = 500
+    nsub10 = 4
+    nsub11 = 10
+    nsub12 = 500
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
@@ -23,13 +30,27 @@ class CnnPolicy(object):
       h3 = conv_to_fc(h2) # 8192
       h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # 2, 256
       pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # 2, 524
-      pi_sub1 = fc(h4, 'pi_sub1', nsub1, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 2
-      pi_sub2 = fc(h4, 'pi_sub2', nsub2, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 10
+      #pi_sub1 = fc(h4, 'pi_sub1', nsub1, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 2
+      #pi_sub2 = fc(h4, 'pi_sub2', nsub2, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 10
       pi_sub3 = fc(h4, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub4 = fc(h4, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub5 = fc(h4, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub6 = fc(h4, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub7 = fc(h4, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub8 = fc(h4, 'pi_sub8', nsub8, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub9 = fc(h4, 'pi_sub9', nsub9, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub10 = fc(h4, 'pi_sub10', nsub10, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub11 = fc(h4, 'pi_sub11', nsub11, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub12 = fc(h4, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
 
       vf = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # 2, 1
 
       # 1 x 1 convolution for dimensionality reduction
+      xy0 = conv(h2, 'xy0', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
+      pi_x0 = xy0[:,:,0,0]
+      x0 = sample(pi_x0)
+      pi_y0 = xy0[:,0,:,0]
+      y0 = sample(pi_y0)
       xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
       pi_x1 = xy1[:,:,0,0]
       x1 = sample(pi_x1)
@@ -47,17 +68,26 @@ class CnnPolicy(object):
 
     def step(ob, *_args, **_kwargs):
       #obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values
-      _pi1, _pi_sub1, _pi_sub2, _pi_sub3, _x1, _y1, _x2, _y2, _v = sess.run([pi, pi_sub1, pi_sub2, pi_sub3, x1, y1, x2, y2, v0], {X:ob})
-      return _pi1, _pi_sub1, _pi_sub2, _pi_sub3, _x1, _y1, _x2, _y2, _v, [] #dummy state
+      _pi1, _pi_sub3, _pi_sub4, _pi_sub5, _pi_sub6, _pi_sub7, _pi_sub8, _pi_sub9, _pi_sub10, _pi_sub11, _pi_sub12, _x0, _y0, _x1, _y1, _x2, _y2, _v = sess.run([pi, pi_sub3, pi_sub4, pi_sub5, pi_sub6, pi_sub7, pi_sub8, pi_sub9, pi_sub10, pi_sub11, pi_sub12, x0, y0, x1, y1, x2, y2, v0], {X:ob})
+      return _pi1, _pi_sub3, _pi_sub4, _pi_sub5, _pi_sub6, _pi_sub7, _pi_sub8, _pi_sub9, _pi_sub10, _pi_sub11, _pi_sub12, _x0, _y0, _x1, _y1, _x2, _y2, _v, [] #dummy state
 
     def value(ob, *_args, **_kwargs):
       return sess.run(v0, {X:ob})
 
     self.X = X
     self.pi = pi
-    self.pi_sub1 = pi_sub1
-    self.pi_sub2 = pi_sub2
     self.pi_sub3 = pi_sub3
+    self.pi_sub4 = pi_sub4
+    self.pi_sub5 = pi_sub5
+    self.pi_sub6 = pi_sub6
+    self.pi_sub7 = pi_sub7
+    self.pi_sub8 = pi_sub8
+    self.pi_sub9 = pi_sub9
+    self.pi_sub10 = pi_sub10
+    self.pi_sub11 = pi_sub11
+    self.pi_sub12 = pi_sub12
+    self.pi_x0 = pi_x0
+    self.pi_y0 = pi_y0
     self.pi_x1 = pi_x1
     self.pi_y1 = pi_y1
     self.pi_x2 = pi_x2
