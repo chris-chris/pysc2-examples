@@ -10,7 +10,7 @@ class CnnPolicy(object):
   def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
     nbatch = nenv*nsteps
     nh, nw, nc = (64,64,1)
-    ob_shape = (nbatch, nc*nstack, nh, nw)
+    ob_shape = (nbatch, nh, nw, nc*nstack)
     nact = 524
     nsub3 = 2
     nsub4 = 5
@@ -25,23 +25,23 @@ class CnnPolicy(object):
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
-      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=2, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 16
-      h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # 2, 16, 16, 32
+      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=1, init_scale=np.sqrt(2), pad="SAME") # 4, 64, 64, 1
+      h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # 4, 64, 64, 1
       h3 = conv_to_fc(h2) # 8192
       h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # 2, 256
       pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # 2, 524
       #pi_sub1 = fc(h4, 'pi_sub1', nsub1, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 2
       #pi_sub2 = fc(h4, 'pi_sub2', nsub2, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 10
-      pi_sub3 = fc(h4, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub4 = fc(h4, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub5 = fc(h4, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub6 = fc(h4, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub7 = fc(h4, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub8 = fc(h4, 'pi_sub8', nsub8, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub9 = fc(h4, 'pi_sub9', nsub9, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub10 = fc(h4, 'pi_sub10', nsub10, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub11 = fc(h4, 'pi_sub11', nsub11, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
-      pi_sub12 = fc(h4, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub3 = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub4 = fc(pi, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub5 = fc(pi, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub6 = fc(pi, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub7 = fc(pi, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub8 = fc(pi, 'pi_sub8', nsub8, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub9 = fc(pi, 'pi_sub9', nsub9, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub10 = fc(pi, 'pi_sub10', nsub10, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub11 = fc(pi, 'pi_sub11', nsub11, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
+      pi_sub12 = fc(pi, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # 2, 500
 
       vf = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # 2, 1
 

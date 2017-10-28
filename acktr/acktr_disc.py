@@ -15,6 +15,8 @@ from baselines.acktr import kfac
 from pysc2.env import environment
 from pysc2.lib import actions as sc2_actions
 
+# np.set_printoptions(threshold=np.inf)
+
 class Model(object):
 
   def __init__(self, policy, ob_space, ac_space,
@@ -81,23 +83,23 @@ class Model(object):
 
     ##training loss
     pg_loss = tf.reduce_mean(ADV*logpac) * tf.reduce_mean(ADV)
-    entropy = tf.reduce_mean(cat_entropy(train_model.pi)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub3)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub4)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub5)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub6)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub7)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub8)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub9)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub10)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub11)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub12)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_x0)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_y0)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_x1)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_y1)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_x2)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_y2))
+    entropy = tf.reduce_mean(cat_entropy(train_model.pi)) # \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub3)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub4)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub5)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub6)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub7)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub8)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub9)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub10)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub11)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_sub12)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_x0)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_y0)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_x1)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_y1)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_x2)) \
+              # + tf.reduce_mean(cat_entropy(train_model.pi_y2))
 
     pg_loss = pg_loss - ent_coef * entropy
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
@@ -199,12 +201,14 @@ class Runner(object):
     self.obs[:, -1:, :, :] = obs[:, :, :, :]
 
   def update_available(self, _available_actions):
-    #print("update_available : ", _available_actions)
+    print("update_available : ", _available_actions)
     self.available_actions = _available_actions
     # avail = np.array([[0,1,2,3,4,7], [0,1,2,3,4,7]])
     self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
     for env_num, list in enumerate(_available_actions):
+      # print("env_num :", env_num, " list :", list)
       for action_num in list:
+        # print("action_num :", action_num)
         if action_num != 0:
           self.base_act_mask[env_num][action_num] = 1
 
@@ -217,23 +221,23 @@ class Runner(object):
         base_actions[env_num] = np.random.choice(list)
     return base_actions
 
-  def get_sub_act_mask(self, base_action_spec):
-    sub1_act_mask = np.zeros((self.nenv, 2), np.int)
-    sub2_act_mask = np.zeros((self.nenv, 10))
-    sub3_act_mask = np.zeros((self.nenv, 500))
-    for env_num, spec in enumerate(base_action_spec):
-      for arg_idx, arg in enumerate(spec.args):
-        if(len(arg.sizes) == 1 and arg.sizes[0] == 2):
-          sub_act_len = spec.args[arg_idx].sizes[0]
-          sub1_act_mask[env_num][0:sub_act_len-1] = 1
-        elif(len(arg.sizes) == 1 and arg.sizes[0] == 500):
-          sub_act_len = spec.args[arg_idx].sizes[0]
-          sub3_act_mask[env_num][0:sub_act_len-1] = 1
-        elif(len(arg.sizes) == 1):
-          sub_act_len = spec.args[arg_idx].sizes[0]
-          sub2_act_mask[env_num][0:sub_act_len-1] = 1
-
-    return sub1_act_mask, sub2_act_mask, sub3_act_mask
+  # def get_sub_act_mask(self, base_action_spec):
+  #   sub1_act_mask = np.zeros((self.nenv, 2), np.int)
+  #   sub2_act_mask = np.zeros((self.nenv, 10))
+  #   sub3_act_mask = np.zeros((self.nenv, 500))
+  #   for env_num, spec in enumerate(base_action_spec):
+  #     for arg_idx, arg in enumerate(spec.args):
+  #       if(len(arg.sizes) == 1 and arg.sizes[0] == 2):
+  #         sub_act_len = spec.args[arg_idx].sizes[0]
+  #         sub1_act_mask[env_num][0:sub_act_len-1] = 1
+  #       elif(len(arg.sizes) == 1 and arg.sizes[0] == 500):
+  #         sub_act_len = spec.args[arg_idx].sizes[0]
+  #         sub3_act_mask[env_num][0:sub_act_len-1] = 1
+  #       elif(len(arg.sizes) == 1):
+  #         sub_act_len = spec.args[arg_idx].sizes[0]
+  #         sub2_act_mask[env_num][0:sub_act_len-1] = 1
+  #
+  #   return sub1_act_mask, sub2_act_mask, sub3_act_mask
 
   def construct_action(self, base_actions, base_action_spec,
                        sub3, sub4, sub5,
@@ -294,10 +298,10 @@ class Runner(object):
       # pi, pi2, x1, y1, x2, y2, v0
       pi1, pi_sub3, pi_sub4, pi_sub5, pi_sub6, pi_sub7, pi_sub8, pi_sub9, pi_sub10, pi_sub11, pi_sub12, x0, y0, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
       # avail = self.env.available_actions()
-      print("pi1 : ", pi1)
-      print("base_act_mask : ", self.base_act_mask)
+      # print("pi1 : ", pi1)
+      print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
-      print("base_actions : ", base_actions)
+      # print("base_actions : ", base_actions)
       base_actions = self.valid_base_action(base_actions)
       print("valid_base_actions : ", base_actions)
       base_action_spec = self.env.action_spec(base_actions)
@@ -321,7 +325,7 @@ class Runner(object):
                                       sub6_actions, sub7_actions, sub8_actions,
                                       sub9_actions, sub10_actions,
                                       sub11_actions, sub12_actions,
-                                      x0*2, y0*2, x1*2, y1*2, x2*2, y2*2)
+                                      x0, y0, x1, y1, x2, y2)
       #sc2_actions.FUNCTIONS[base_action]
       #sub_action = pi2 * avail2 #pi2 (2?, 500) * (2?, 500) masking
 
