@@ -2,3 +2,4 @@ python-gflags
 git+https://github.com/openai/baselines
 numpy
 tensorflow
+cloudpickle

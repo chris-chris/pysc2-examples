@@ -12,7 +12,6 @@ from baselines.common import set_global_seeds
 import deepq_mineral_shards
 import datetime
 
-from baselines import bench
 from common.vec_env.subproc_vec_env import SubprocVecEnv
 from acktr.policies import CnnPolicy
 from acktr import acktr_disc
