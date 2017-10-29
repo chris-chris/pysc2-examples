@@ -203,7 +203,7 @@ class Runner(object):
     # could not broadcast input array from shape (4,1,64,64) into shape (4,4,64)
 
   def update_available(self, _available_actions):
-    print("update_available : ", _available_actions)
+    #print("update_available : ", _available_actions)
     self.available_actions = _available_actions
     # avail = np.array([[0,1,2,3,4,7], [0,1,2,3,4,7]])
     self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
