@@ -760,11 +760,11 @@ class Runner(object):
       pi1, pi_sub3, pi_sub4, pi_sub5, pi_sub6, pi_sub7, pi_sub8, pi_sub9, pi_sub10, pi_sub11, pi_sub12, x0, y0, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
       # avail = self.env.available_actions()
       # print("pi1 : ", pi1)
-      print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
+      #print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
       # print("base_actions : ", base_actions)
       base_actions = self.valid_base_action(base_actions)
-      print("valid_base_actions : ", base_actions)
+      # print("valid_base_actions : ", base_actions)
       base_action_spec = self.env.action_spec(base_actions)
       # print("base_action_spec : ", base_action_spec)
       # sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)
@@ -837,7 +837,8 @@ class Runner(object):
           model = self.model
           if self.callback is not None:
             self.callback(locals(), globals())
-
+          
+      print("self.total_reward :", self.total_reward)
       self.update_obs(obs)
       mb_rewards.append(rewards)
     mb_dones.append(self.dones)
