@@ -50,7 +50,7 @@ get the linux version. By default, PySC2 expects the game to live in
 ## 3. Download Maps
 
 Download the [ladder maps](https://github.com/Blizzard/s2client-proto#downloads)
-and the [mini games](https://github.com/deepmind/pysc2/releases/download/v1.0/mini_games.zip)
+and the [mini games](https://github.com/deepmind/pysc2/releases/download/v1.2/mini_games.zip)
 and extract them to your `StarcraftII/Maps/` directory.
 
 ## 4. Train it!
