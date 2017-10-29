@@ -59,50 +59,97 @@ class Model(object):
     self.model = step_model = policy(sess, ob_space, ac_space, nenvs, 1, nstack, reuse=False)
     self.model2 = train_model = policy(sess, ob_space, ac_space, nenvs, nsteps, nstack, reuse=True)
 
+    # Policy 1 : Base Action : train_model.pi label = A
 
+    logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
 
-    logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub4, labels=SUB4) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub5, labels=SUB5) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub6, labels=SUB6) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub7, labels=SUB7) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub8, labels=SUB8) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub9, labels=SUB9) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub10, labels=SUB10) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub11, labels=SUB11) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub12, labels=SUB12) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x0, labels=X0) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y0, labels=Y0) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2) \
-             + tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
+    logpac_sub3 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3)
+    logpac_sub4 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub4, labels=SUB4)
+    logpac_sub5 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub5, labels=SUB5)
+    logpac_sub6 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub6, labels=SUB6)
+    logpac_sub7 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub7, labels=SUB7)
+    logpac_sub8 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub8, labels=SUB8)
+    logpac_sub9 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub9, labels=SUB9)
+    logpac_sub10 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub10, labels=SUB10)
+    logpac_sub11 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub11, labels=SUB11)
+    logpac_sub12 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub12, labels=SUB12)
+
+    logpac_x0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x0, labels=X0)
+    logpac_y0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y0, labels=Y0)
+    logpac_x1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1)
+    logpac_y1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1)
+    logpac_x2 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2)
+    logpac_y2 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
 
     self.logits = logits = train_model.pi
 
     ##training loss
     pg_loss = tf.reduce_mean(ADV*logpac) * tf.reduce_mean(ADV)
-    entropy = tf.reduce_mean(cat_entropy(train_model.pi)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub3)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub4)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub5)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub6)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub7)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub8)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub9)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub10)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub11)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_sub12)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_x0)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_y0)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_x1)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_y1)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_x2)) \
-              + tf.reduce_mean(cat_entropy(train_model.pi_y2))
+
+    pg_loss_sub3 = tf.reduce_mean(ADV*logpac_sub3) * tf.reduce_mean(ADV)
+    pg_loss_sub4 = tf.reduce_mean(ADV*logpac_sub4) * tf.reduce_mean(ADV)
+    pg_loss_sub5 = tf.reduce_mean(ADV*logpac_sub5) * tf.reduce_mean(ADV)
+    pg_loss_sub6 = tf.reduce_mean(ADV*logpac_sub6) * tf.reduce_mean(ADV)
+    pg_loss_sub7 = tf.reduce_mean(ADV*logpac_sub7) * tf.reduce_mean(ADV)
+    pg_loss_sub8 = tf.reduce_mean(ADV*logpac_sub8) * tf.reduce_mean(ADV)
+    pg_loss_sub9 = tf.reduce_mean(ADV*logpac_sub9) * tf.reduce_mean(ADV)
+    pg_loss_sub10 = tf.reduce_mean(ADV*logpac_sub10) * tf.reduce_mean(ADV)
+    pg_loss_sub11 = tf.reduce_mean(ADV*logpac_sub11) * tf.reduce_mean(ADV)
+    pg_loss_sub12 = tf.reduce_mean(ADV*logpac_sub12) * tf.reduce_mean(ADV)
+
+    pg_loss_x0 = tf.reduce_mean(ADV*logpac_x0) * tf.reduce_mean(ADV)
+    pg_loss_y0 = tf.reduce_mean(ADV*logpac_y0) * tf.reduce_mean(ADV)
+    pg_loss_x1 = tf.reduce_mean(ADV*logpac_x1) * tf.reduce_mean(ADV)
+    pg_loss_y1 = tf.reduce_mean(ADV*logpac_y1) * tf.reduce_mean(ADV)
+    pg_loss_x2 = tf.reduce_mean(ADV*logpac_x2) * tf.reduce_mean(ADV)
+    pg_loss_y2 = tf.reduce_mean(ADV*logpac_y2) * tf.reduce_mean(ADV)
+
+    entropy = tf.reduce_mean(cat_entropy(train_model.pi))
+
+    entropy_sub3 = tf.reduce_mean(cat_entropy(train_model.pi_sub3))
+    entropy_sub4 = tf.reduce_mean(cat_entropy(train_model.pi_sub4))
+    entropy_sub5 = tf.reduce_mean(cat_entropy(train_model.pi_sub5))
+    entropy_sub6 = tf.reduce_mean(cat_entropy(train_model.pi_sub6))
+    entropy_sub7 = tf.reduce_mean(cat_entropy(train_model.pi_sub7))
+    entropy_sub8 = tf.reduce_mean(cat_entropy(train_model.pi_sub8))
+    entropy_sub9 = tf.reduce_mean(cat_entropy(train_model.pi_sub9))
+    entropy_sub10 = tf.reduce_mean(cat_entropy(train_model.pi_sub10))
+    entropy_sub11 = tf.reduce_mean(cat_entropy(train_model.pi_sub11))
+    entropy_sub12 = tf.reduce_mean(cat_entropy(train_model.pi_sub12))
+
+    entropy_x0 = tf.reduce_mean(cat_entropy(train_model.pi_x0))
+    entropy_y0 = tf.reduce_mean(cat_entropy(train_model.pi_y0))
+    entropy_x1 = tf.reduce_mean(cat_entropy(train_model.pi_x1))
+    entropy_y1 = tf.reduce_mean(cat_entropy(train_model.pi_y1))
+    entropy_x2 = tf.reduce_mean(cat_entropy(train_model.pi_x2))
+    entropy_y2 = tf.reduce_mean(cat_entropy(train_model.pi_y2))
 
     pg_loss = pg_loss - ent_coef * entropy
+
+    pg_loss_sub3 = pg_loss_sub3 - ent_coef * entropy_sub3
+    pg_loss_sub4 = pg_loss_sub4 - ent_coef * entropy_sub4
+    pg_loss_sub5 = pg_loss_sub5 - ent_coef * entropy_sub5
+    pg_loss_sub6 = pg_loss_sub6 - ent_coef * entropy_sub6
+    pg_loss_sub7 = pg_loss_sub7 - ent_coef * entropy_sub7
+    pg_loss_sub8 = pg_loss_sub8 - ent_coef * entropy_sub8
+    pg_loss_sub9 = pg_loss_sub9 - ent_coef * entropy_sub9
+    pg_loss_sub10 = pg_loss_sub10 - ent_coef * entropy_sub10
+    pg_loss_sub11 = pg_loss_sub11 - ent_coef * entropy_sub11
+    pg_loss_sub12 = pg_loss_sub12 - ent_coef * entropy_sub12
+
+    pg_loss_x0 = pg_loss_x0 - ent_coef * entropy_x0
+    pg_loss_y0 = pg_loss_y0 - ent_coef * entropy_y0
+    pg_loss_x1 = pg_loss_x1 - ent_coef * entropy_x1
+    pg_loss_y1 = pg_loss_y1 - ent_coef * entropy_y1
+    pg_loss_x2 = pg_loss_x2 - ent_coef * entropy_x2
+    pg_loss_y2 = pg_loss_y2 - ent_coef * entropy_y2
+
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
+
+    self.params = params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/common')
+
+    # Base Action
+
     train_loss = pg_loss + vf_coef * vf_loss
 
     ##Fisher loss construction
@@ -111,9 +158,8 @@ class Model(object):
     self.vf_fisher = vf_fisher_loss = - vf_fisher_coef*tf.reduce_mean(tf.pow(train_model.vf - tf.stop_gradient(sample_net), 2))
     self.joint_fisher = joint_fisher_loss = pg_fisher_loss + vf_fisher_loss
 
-    self.params=params = find_trainable_variables("model")
 
-    self.grads_check = grads = tf.gradients(train_loss,params)
+    self.grads_check = grads = tf.gradients(train_loss, params)
 
     with tf.device('/gpu:0'):
       self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
@@ -121,8 +167,389 @@ class Model(object):
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss, var_list=params)
-      train_op, q_runner = optim.apply_gradients(list(zip(grads,params)))
+      train_op, q_runner = optim.apply_gradients(list(zip(grads, params)))
+
     self.q_runner = q_runner
+
+    # sub3
+
+    self.params_sub3 = params_sub3 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub3')
+
+    train_loss_sub3 = pg_loss_sub3 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub3 = pg_fisher_loss_sub3 = -tf.reduce_mean(logpac_sub3)
+    self.joint_fisher_sub3 = joint_fisher_loss_sub3 = pg_fisher_loss_sub3 + vf_fisher_loss
+
+
+    self.grads_check_sub3 = grads_sub3 = tf.gradients(train_loss_sub3, params_sub3)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub3, var_list=params_sub3)
+      train_op_sub3, q_runner_sub3 = optim.apply_gradients(list(zip(grads_sub3, params_sub3)))
+
+    self.q_runner_sub3 = q_runner_sub3
+
+    # sub4
+
+    self.params_sub4 = params_sub4 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub4')
+
+    train_loss_sub4 = pg_loss_sub4 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub4 = pg_fisher_loss_sub4 = -tf.reduce_mean(logpac_sub4)
+    self.joint_fisher_sub4 = joint_fisher_loss_sub4 = pg_fisher_loss_sub4 + vf_fisher_loss
+
+
+    self.grads_check_sub4 = grads_sub4 = tf.gradients(train_loss_sub4, params_sub4)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub4, var_list=params_sub4)
+      train_op_sub4, q_runner_sub4 = optim.apply_gradients(list(zip(grads_sub4, params_sub4)))
+
+    self.q_runner_sub4 = q_runner_sub4
+
+
+    # sub5
+
+    self.params_sub5 = params_sub5 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub5')
+
+    train_loss_sub5 = pg_loss_sub5 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub5 = pg_fisher_loss_sub5 = -tf.reduce_mean(logpac_sub5)
+    self.joint_fisher_sub5 = joint_fisher_loss_sub5 = pg_fisher_loss_sub5 + vf_fisher_loss
+
+
+    self.grads_check_sub5 = grads_sub5 = tf.gradients(train_loss_sub5, params_sub5)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub5, var_list=params_sub5)
+      train_op_sub5, q_runner_sub5 = optim.apply_gradients(list(zip(grads_sub5, params_sub5)))
+
+    self.q_runner_sub4 = q_runner_sub5
+
+    # sub6
+
+    self.params_sub6 = params_sub6 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub6')
+
+    train_loss_sub6 = pg_loss_sub6 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub6 = pg_fisher_loss_sub6 = -tf.reduce_mean(logpac_sub6)
+    self.joint_fisher_sub6 = joint_fisher_loss_sub6 = pg_fisher_loss_sub6 + vf_fisher_loss
+
+
+    self.grads_check_sub6 = grads_sub6 = tf.gradients(train_loss_sub6, params_sub6)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub6, var_list=params_sub6)
+      train_op_sub6, q_runner_sub6 = optim.apply_gradients(list(zip(grads_sub6, params_sub6)))
+
+    self.q_runner_sub6 = q_runner_sub6
+
+
+    # sub7
+
+    self.params_sub7 = params_sub7 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub7')
+
+    train_loss_sub7 = pg_loss_sub7 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub7 = pg_fisher_loss_sub7 = -tf.reduce_mean(logpac_sub7)
+    self.joint_fisher_sub7 = joint_fisher_loss_sub7 = pg_fisher_loss_sub7 + vf_fisher_loss
+
+
+    self.grads_check_sub7 = grads_sub7 = tf.gradients(train_loss_sub7, params_sub7)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub7, var_list=params_sub7)
+      train_op_sub7, q_runner_sub7 = optim.apply_gradients(list(zip(grads_sub7, params_sub7)))
+
+    self.q_runner_sub7 = q_runner_sub7
+
+
+    # sub8
+
+    self.params_sub8 = params_sub8 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub8')
+
+    train_loss_sub8 = pg_loss_sub8 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub8 = pg_fisher_loss_sub8 = -tf.reduce_mean(logpac_sub8)
+    self.joint_fisher_sub8 = joint_fisher_loss_sub8 = pg_fisher_loss_sub8 + vf_fisher_loss
+
+
+    self.grads_check_sub8 = grads_sub8 = tf.gradients(train_loss_sub8, params_sub8)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub8, var_list=params_sub8)
+      train_op_sub8, q_runner_sub8 = optim.apply_gradients(list(zip(grads_sub8, params_sub8)))
+
+    self.q_runner_sub8 = q_runner_sub8
+
+
+
+    # sub9
+
+    self.params_sub9 = params_sub9 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub9')
+
+    train_loss_sub9 = pg_loss_sub9 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub9 = pg_fisher_loss_sub9 = -tf.reduce_mean(logpac_sub9)
+    self.joint_fisher_sub9 = joint_fisher_loss_sub9 = pg_fisher_loss_sub9 + vf_fisher_loss
+
+
+    self.grads_check_sub9 = grads_sub9 = tf.gradients(train_loss_sub9, params_sub9)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub9, var_list=params_sub9)
+      train_op_sub9, q_runner_sub9 = optim.apply_gradients(list(zip(grads_sub9, params_sub9)))
+
+    self.q_runner_sub9 = q_runner_sub9
+
+
+    # sub10
+
+    self.params_sub10 = params_sub10 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub10')
+
+    train_loss_sub10 = pg_loss_sub10 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub10 = pg_fisher_loss_sub10 = -tf.reduce_mean(logpac_sub10)
+    self.joint_fisher_sub10 = joint_fisher_loss_sub10 = pg_fisher_loss_sub10 + vf_fisher_loss
+
+
+    self.grads_check_sub10 = grads_sub10 = tf.gradients(train_loss_sub10, params_sub10)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub10, var_list=params_sub10)
+      train_op_sub10, q_runner_sub10 = optim.apply_gradients(list(zip(grads_sub10, params_sub10)))
+
+    self.q_runner_sub10 = q_runner_sub10
+
+
+    # sub11
+
+    self.params_sub11 = params_sub11 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub11')
+
+    train_loss_sub11 = pg_loss_sub11 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub11 = pg_fisher_loss_sub11 = -tf.reduce_mean(logpac_sub11)
+    self.joint_fisher_sub11 = joint_fisher_loss_sub11 = pg_fisher_loss_sub11 + vf_fisher_loss
+
+
+    self.grads_check_sub11 = grads_sub11 = tf.gradients(train_loss_sub11, params_sub11)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub11, var_list=params_sub11)
+      train_op_sub11, q_runner_sub11 = optim.apply_gradients(list(zip(grads_sub11, params_sub11)))
+
+    self.q_runner_sub11 = q_runner_sub11
+
+
+    # sub12
+
+    self.params_sub12 = params_sub12 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub12')
+
+    train_loss_sub12 = pg_loss_sub12 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_sub12 = pg_fisher_loss_sub12 = -tf.reduce_mean(logpac_sub12)
+    self.joint_fisher_sub12 = joint_fisher_loss_sub12 = pg_fisher_loss_sub12 + vf_fisher_loss
+
+
+    self.grads_check_sub12 = grads_sub12 = tf.gradients(train_loss_sub12, params_sub12)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub12, var_list=params_sub12)
+      train_op_sub12, q_runner_sub12 = optim.apply_gradients(list(zip(grads_sub12, params_sub12)))
+
+    self.q_runner_sub12 = q_runner_sub12
+
+
+    # x0
+
+    self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0')
+
+    train_loss_x0 = pg_loss_x0 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_x0 = pg_fisher_loss_x0 = -tf.reduce_mean(logpac_x0)
+    self.joint_fisher_x0 = joint_fisher_loss_x0 = pg_fisher_loss_x0 + vf_fisher_loss
+
+
+    self.grads_check_x0 = grads_x0 = tf.gradients(train_loss_x0, params_xy0)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_x0, var_list=params_xy0)
+      train_op_x0, q_runner_x0 = optim.apply_gradients(list(zip(grads_x0, params_xy0)))
+
+    self.q_runner_x0 = q_runner_x0
+
+
+    # y0
+
+    train_loss_y0 = pg_loss_y0 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_y0 = pg_fisher_loss_y0 = -tf.reduce_mean(logpac_y0)
+    self.joint_fisher_y0 = joint_fisher_loss_y0 = pg_fisher_loss_y0 + vf_fisher_loss
+
+
+    self.grads_check_y0 = grads_y0 = tf.gradients(train_loss_y0, params_xy0)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_y0, var_list=params_xy0)
+      train_op_y0, q_runner_y0 = optim.apply_gradients(list(zip(grads_y0, params_xy0)))
+
+    self.q_runner_y0 = q_runner_y0
+
+
+    # x1
+
+    self.params_xy1 = params_xy1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy1')
+
+    train_loss_x1 = pg_loss_x1 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_x1 = pg_fisher_loss_x1 = -tf.reduce_mean(logpac_x1)
+    self.joint_fisher_x1 = joint_fisher_loss_x1 = pg_fisher_loss_x1 + vf_fisher_loss
+
+
+    self.grads_check_x1 = grads_x1 = tf.gradients(train_loss_x1, params_xy1)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_x1, var_list=params_xy1)
+      train_op_x1, q_runner_x1 = optim.apply_gradients(list(zip(grads_x1, params_xy1)))
+
+    self.q_runner_x1 = q_runner_x1
+
+
+    # y1
+
+    train_loss_y1 = pg_loss_y1 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_y1 = pg_fisher_loss_y1 = -tf.reduce_mean(logpac_y1)
+    self.joint_fisher_y1 = joint_fisher_loss_y1 = pg_fisher_loss_y1 + vf_fisher_loss
+
+
+    self.grads_check_y1 = grads_y1 = tf.gradients(train_loss_y1, params_xy1)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_y1, var_list=params_xy1)
+      train_op_y1, q_runner_y1 = optim.apply_gradients(list(zip(grads_y1, params_xy1)))
+
+    self.q_runner_y1 = q_runner_y1
+
+
+
+    # x2
+
+    self.params_xy2 = params_xy2 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy2')
+
+    train_loss_x2 = pg_loss_x2 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_x2 = pg_fisher_loss_x2 = -tf.reduce_mean(logpac_x2)
+    self.joint_fisher_x2 = joint_fisher_loss_x2 = pg_fisher_loss_x2 + vf_fisher_loss
+
+
+    self.grads_check_x2 = grads_x2 = tf.gradients(train_loss_x2, params_xy2)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_x2, var_list=params_xy2)
+      train_op_x2, q_runner_x2 = optim.apply_gradients(list(zip(grads_x2, params_xy2)))
+
+    self.q_runner_x2 = q_runner_x2
+
+
+    # y2
+
+    train_loss_y2 = pg_loss_y2 + vf_coef * vf_loss
+
+    ##Fisher loss construction
+    self.pg_fisher_y2 = pg_fisher_loss_y2 = -tf.reduce_mean(logpac_y2)
+    self.joint_fisher_y2 = joint_fisher_loss_y2 = pg_fisher_loss_y2 + vf_fisher_loss
+
+
+    self.grads_check_y2 = grads_y2 = tf.gradients(train_loss_y2, params_xy2)
+
+    with tf.device('/gpu:0'):
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
+                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_y2, var_list=params_xy2)
+      train_op_y2, q_runner_y2 = optim.apply_gradients(list(zip(grads_y2, params_xy2)))
+
+    self.q_runner_y2 = q_runner_y2
+
+
+
     self.lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
     def train(obs, states, rewards, masks, actions,
@@ -140,8 +567,40 @@ class Model(object):
         td_map[train_model.S] = states
         td_map[train_model.M] = masks
 
-      policy_loss, value_loss, policy_entropy, _ = sess.run(
-        [pg_loss, vf_loss, entropy, train_op],
+      policy_loss, value_loss, policy_entropy, _, \
+      policy_loss_sub3, policy_entropy_sub3, _, \
+      policy_loss_sub4, policy_entropy_sub4, _, \
+      policy_loss_sub5, policy_entropy_sub5, _, \
+      policy_loss_sub6, policy_entropy_sub6, _, \
+      policy_loss_sub7, policy_entropy_sub7, _, \
+      policy_loss_sub8, policy_entropy_sub8, _, \
+      policy_loss_sub9, policy_entropy_sub9, _, \
+      policy_loss_sub10, policy_entropy_sub10, _, \
+      policy_loss_sub11, policy_entropy_sub11, _, \
+      policy_loss_sub12, policy_entropy_sub12, _, \
+      policy_loss_x0, policy_entropy_x0, _, \
+      policy_loss_y0, policy_entropy_y0, _ , \
+      policy_loss_x1, policy_entropy_x1, _ , \
+      policy_loss_y1, policy_entropy_y1, _ , \
+      policy_loss_x2, policy_entropy_x2, _ , \
+      policy_loss_y2, policy_entropy_y2, _  = sess.run(
+        [pg_loss, vf_loss, entropy, train_op,
+         pg_loss_sub3, entropy_sub3, train_op_sub3,
+         pg_loss_sub4, entropy_sub4, train_op_sub4,
+         pg_loss_sub5, entropy_sub5, train_op_sub5,
+         pg_loss_sub6, entropy_sub6, train_op_sub6,
+         pg_loss_sub7, entropy_sub7, train_op_sub7,
+         pg_loss_sub8, entropy_sub8, train_op_sub8,
+         pg_loss_sub9, entropy_sub9, train_op_sub9,
+         pg_loss_sub10, entropy_sub10, train_op_sub10,
+         pg_loss_sub11, entropy_sub11, train_op_sub11,
+         pg_loss_sub12, entropy_sub12, train_op_sub12,
+         pg_loss_x0, entropy_x0, train_op_x0,
+         pg_loss_y0, entropy_y0, train_op_y0,
+         pg_loss_x1, entropy_x1, train_op_x1,
+         pg_loss_y1, entropy_y1, train_op_y1,
+         pg_loss_x2, entropy_x2, train_op_x2,
+         pg_loss_y2, entropy_y2, train_op_y2],
         td_map
       )
       print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
@@ -372,7 +831,7 @@ class Runner(object):
           logger.record_tabular("steps", self.steps)
           logger.record_tabular("episodes", self.episodes)
           logger.dump_tabular()
-          
+
           self.total_reward[n] = 0
 
           model = self.model

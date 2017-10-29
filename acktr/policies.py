@@ -25,40 +25,57 @@ class CnnPolicy(object):
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
-      h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=2, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 16
-      h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 32
-      h3 = conv_to_fc(h2) # 131072
-      h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # ?, 256
-      pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
-      pi_sub3 = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
-      pi_sub4 = fc(pi, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 5) # ?, 5
-      pi_sub5 = fc(pi, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
-      pi_sub6 = fc(pi, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
-      pi_sub7 = fc(pi, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
-      pi_sub8 = fc(pi, 'pi_sub8', nsub8, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
-      pi_sub9 = fc(pi, 'pi_sub9', nsub9, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
-      pi_sub10 = fc(pi, 'pi_sub10', nsub10, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
-      pi_sub11 = fc(pi, 'pi_sub11', nsub11, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
-      pi_sub12 = fc(pi, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
+      with tf.variable_scope("common", reuse=reuse):
+        h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=2, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 16
+        h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 32
+        h3 = conv_to_fc(h2) # 131072
+        h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # ?, 256
+        pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
+
+      with tf.variable_scope("sub3", reuse=reuse):
+        pi_sub3 = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
+      with tf.variable_scope("sub4", reuse=reuse):
+        pi_sub4 = fc(pi, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 5) # ?, 5
+      with tf.variable_scope("sub5", reuse=reuse):
+        pi_sub5 = fc(pi, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
+      with tf.variable_scope("sub6", reuse=reuse):
+        pi_sub6 = fc(pi, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
+      with tf.variable_scope("sub7", reuse=reuse):
+        pi_sub7 = fc(pi, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
+      with tf.variable_scope("sub8", reuse=reuse):
+        pi_sub8 = fc(pi, 'pi_sub8', nsub8, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
+      with tf.variable_scope("sub9", reuse=reuse):
+        pi_sub9 = fc(pi, 'pi_sub9', nsub9, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
+      with tf.variable_scope("sub10", reuse=reuse):
+        pi_sub10 = fc(pi, 'pi_sub10', nsub10, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
+      with tf.variable_scope("sub11", reuse=reuse):
+        pi_sub11 = fc(pi, 'pi_sub11', nsub11, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
+      with tf.variable_scope("sub12", reuse=reuse):
+        pi_sub12 = fc(pi, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
 
       vf = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # ?, 1
 
-      # 1 x 1 convolution for dimensionality reduction
-      xy0 = conv(h2, 'xy0', nf=1, rf=1, stride=2, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      pi_x0 = xy0[:,:,0,0] # ?, 64
-      x0 = sample(pi_x0) # ?,
-      pi_y0 = xy0[:,0,:,0] # ?, 64
-      y0 = sample(pi_y0) # ?,
-      xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      pi_x1 = xy1[:,:,0,0] # ?, 64
-      x1 = sample(pi_x1) # ?,
-      pi_y1 = xy1[:,0,:,0] # ?, 64
-      y1 = sample(pi_y1) # ?,
-      xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      pi_x2 = xy2[:,:,0,0] # ?, 64
-      x2 = sample(pi_x2) # ?,
-      pi_y2 = xy2[:,0,:,0] # ?, 64
-      y2 = sample(pi_y2) # ?,
+      with tf.variable_scope("xy0", reuse=reuse):
+        # 1 x 1 convolution for dimensionality reduction
+        xy0 = conv(h2, 'xy0', nf=1, rf=1, stride=2, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
+        pi_x0 = xy0[:,:,0,0] # ?, 64
+        x0 = sample(pi_x0) # ?,
+        pi_y0 = xy0[:,0,:,0] # ?, 64
+        y0 = sample(pi_y0) # ?,
+
+      with tf.variable_scope("xy1", reuse=reuse):
+        xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
+        pi_x1 = xy1[:,:,0,0] # ?, 64
+        x1 = sample(pi_x1) # ?,
+        pi_y1 = xy1[:,0,:,0] # ?, 64
+        y1 = sample(pi_y1) # ?,
+
+      with tf.variable_scope("xy2", reuse=reuse):
+        xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
+        pi_x2 = xy2[:,:,0,0] # ?, 64
+        x2 = sample(pi_x2) # ?,
+        pi_y2 = xy2[:,0,:,0] # ?, 64
+        y2 = sample(pi_y2) # ?,
 
     v0 = vf[:, 0]
     a0 = sample(pi)
