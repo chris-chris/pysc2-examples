@@ -686,7 +686,7 @@ class Model(object):
          pg_loss_y2, entropy_y2, _train_y2],
         td_map
       )
-      # print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
+      print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
 
       # policy_loss = 1 if(np.isinf(policy_loss)) else policy_loss
       # value_loss = 1 if(np.isinf(value_loss)) else value_loss
