@@ -33,7 +33,7 @@ class CnnPolicy(object):
         h3 = conv_to_fc(h2) # 131072
         h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # ?, 256
         pi_ = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
-        pi = tf.nn.softmax(pi_, 1)
+        pi = tf.nn.l2_normalize(pi_, 1)
 
       with tf.variable_scope("sub3", reuse=reuse):
         pi_sub3 = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
