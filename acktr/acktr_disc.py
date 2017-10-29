@@ -10,7 +10,7 @@ from baselines.common import set_global_seeds, explained_variance
 from baselines.acktr.utils import discount_with_dones
 from baselines.acktr.utils import Scheduler, find_trainable_variables
 from baselines.acktr.utils import cat_entropy, mse
-from baselines.acktr import kfac
+from acktr import kfac
 
 from pysc2.env import environment
 from pysc2.lib import actions as sc2_actions
@@ -783,7 +783,7 @@ class Runner(object):
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
       # print("base_actions : ", base_actions)
       base_actions = self.valid_base_action(base_actions)
-      # print("valid_base_actions : ", base_actions)
+      print("valid_base_actions : ", base_actions)
       base_action_spec = self.env.action_spec(base_actions)
       # print("base_action_spec : ", base_action_spec)
       # sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)
