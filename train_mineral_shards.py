@@ -152,7 +152,7 @@ def main():
       seed,
       total_timesteps=num_timesteps,
       nprocs=FLAGS.num_cpu,
-      ent_coef=0.3,
+      ent_coef=0.5,
       callback=acktr_callback)
 
 

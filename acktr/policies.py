@@ -26,13 +26,14 @@ class CnnPolicy(object):
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
       with tf.variable_scope("common", reuse=reuse):
-        h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=2, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 16
+        h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 16
         h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 32
 
       with tf.variable_scope("pi1", reuse=reuse):
         h3 = conv_to_fc(h2) # 131072
         h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # ?, 256
-        pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
+        pi_ = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
+        pi = tf.nn.softmax(pi_, 1)
 
       with tf.variable_scope("sub3", reuse=reuse):
         pi_sub3 = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
@@ -59,7 +60,7 @@ class CnnPolicy(object):
 
       with tf.variable_scope("xy0", reuse=reuse):
         # 1 x 1 convolution for dimensionality reduction
-        xy0 = conv(h2, 'xy0', nf=1, rf=1, stride=2, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
+        xy0 = conv(h2, 'xy0', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
         pi_x0 = xy0[:,:,0,0] # ?, 64
         x0 = sample(pi_x0) # ?,
         pi_y0 = xy0[:,0,:,0] # ?, 64
