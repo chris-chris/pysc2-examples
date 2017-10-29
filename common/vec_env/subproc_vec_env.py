@@ -16,8 +16,7 @@ _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 def worker(remote, map_name):
 
     with sc2_env.SC2Env(
-        map_name,
-        step_mul=1,
+        map_name=map_name
     ) as env:
 
         while True:
