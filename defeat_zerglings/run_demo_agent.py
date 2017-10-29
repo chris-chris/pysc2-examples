@@ -1,6 +1,6 @@
 import sys
 
-import gflags as flags
+from absl import flags
 from baselines import deepq
 from pysc2.env import sc2_env
 from pysc2.lib import actions
