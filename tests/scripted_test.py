@@ -11,22 +11,18 @@ from pysc2.tests import utils
 from pysc2.lib import actions as sc2_actions
 from pysc2.lib import features
 
-from pysc2.lib import basetest
-import gflags as flags
+from absl import flags
+from absl.testing import absltest
 import sys
 
 _NO_OP = sc2_actions.FUNCTIONS.no_op.id
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
-
-FLAGS = flags.FLAGS
 
 class TestScripted(utils.TestCase):
   steps = 2000
   step_mul = 1
 
   def test_defeat_zerglings(self):
-    FLAGS(sys.argv)
-
     with sc2_env.SC2Env(
         "DefeatZerglingsAndBanelings",
         step_mul=self.step_mul,
@@ -44,4 +40,4 @@ class TestScripted(utils.TestCase):
     self.assertEqual(agent.steps, self.steps)
 
 if __name__ == "__main__":
-  basetest.main()
+  absltest.main()
