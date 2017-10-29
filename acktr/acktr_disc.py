@@ -146,6 +146,8 @@ class Model(object):
 
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
 
+    self.params = params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model')
+
     self.params_common = params_common = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/common')
 
     self.params_pi1 = params_pi1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/pi1') + params_common
@@ -159,7 +161,9 @@ class Model(object):
     sample_net = train_model.vf + tf.random_normal(tf.shape(train_model.vf))
     self.vf_fisher = vf_fisher_loss = - vf_fisher_coef*tf.reduce_mean(tf.pow(train_model.vf - tf.stop_gradient(sample_net), 2))
     self.joint_fisher = joint_fisher_loss = pg_fisher_loss + vf_fisher_loss
-
+    
+    print("train_loss :", train_loss, " pg_fisher :", pg_fisher_loss,
+          " vf_fisher :", vf_fisher_loss, " joint_fisher_loss :", joint_fisher_loss)
 
     self.grads_check = grads = tf.gradients(train_loss, params_pi1)
 
@@ -183,12 +187,11 @@ class Model(object):
     self.pg_fisher_sub3 = pg_fisher_loss_sub3 = -tf.reduce_mean(logpac_sub3)
     self.joint_fisher_sub3 = joint_fisher_loss_sub3 = pg_fisher_loss_sub3 + vf_fisher_loss
 
-
     self.grads_check_sub3 = grads_sub3 = tf.gradients(train_loss_sub3, params_sub3)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub3, var_list=params_sub3)
@@ -210,8 +213,8 @@ class Model(object):
     self.grads_check_sub4 = grads_sub4 = tf.gradients(train_loss_sub4, params_sub4)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub4, var_list=params_sub4)
@@ -234,9 +237,15 @@ class Model(object):
     self.grads_check_sub5 = grads_sub5 = tf.gradients(train_loss_sub5, params_sub5)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
-                                              stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR,
+                                              clip_kl=kfac_clip,
+                                              momentum=0.9,
+                                              kfac_update=1,
+                                              epsilon=0.01,
+                                              stats_decay=0.99,
+                                              async=1,
+                                              cold_iter=10,
+                                              max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub5, var_list=params_sub5)
       train_op_sub5, q_runner_sub5 = optim.apply_gradients(list(zip(grads_sub5, params_sub5)))
@@ -257,8 +266,8 @@ class Model(object):
     self.grads_check_sub6 = grads_sub6 = tf.gradients(train_loss_sub6, params_sub6)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub6, var_list=params_sub6)
@@ -281,8 +290,8 @@ class Model(object):
     self.grads_check_sub7 = grads_sub7 = tf.gradients(train_loss_sub7, params_sub7)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub7, var_list=params_sub7)
@@ -305,8 +314,8 @@ class Model(object):
     self.grads_check_sub8 = grads_sub8 = tf.gradients(train_loss_sub8, params_sub8)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub8, var_list=params_sub8)
@@ -330,8 +339,8 @@ class Model(object):
     self.grads_check_sub9 = grads_sub9 = tf.gradients(train_loss_sub9, params_sub9)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub9, var_list=params_sub9)
@@ -354,8 +363,8 @@ class Model(object):
     self.grads_check_sub10 = grads_sub10 = tf.gradients(train_loss_sub10, params_sub10)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub10, var_list=params_sub10)
@@ -378,8 +387,8 @@ class Model(object):
     self.grads_check_sub11 = grads_sub11 = tf.gradients(train_loss_sub11, params_sub11)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub11, var_list=params_sub11)
@@ -402,8 +411,8 @@ class Model(object):
     self.grads_check_sub12 = grads_sub12 = tf.gradients(train_loss_sub12, params_sub12)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_sub12, var_list=params_sub12)
@@ -426,8 +435,8 @@ class Model(object):
     self.grads_check_x0 = grads_x0 = tf.gradients(train_loss_x0, params_xy0)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_x0, var_list=params_xy0)
@@ -448,8 +457,8 @@ class Model(object):
     self.grads_check_y0 = grads_y0 = tf.gradients(train_loss_y0, params_xy0)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_y0, var_list=params_xy0)
@@ -472,8 +481,8 @@ class Model(object):
     self.grads_check_x1 = grads_x1 = tf.gradients(train_loss_x1, params_xy1)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_x1, var_list=params_xy1)
@@ -494,8 +503,8 @@ class Model(object):
     self.grads_check_y1 = grads_y1 = tf.gradients(train_loss_y1, params_xy1)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_y1, var_list=params_xy1)
@@ -519,8 +528,8 @@ class Model(object):
     self.grads_check_x2 = grads_x2 = tf.gradients(train_loss_x2, params_xy2)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_x2, var_list=params_xy2)
@@ -541,8 +550,8 @@ class Model(object):
     self.grads_check_y2 = grads_y2 = tf.gradients(train_loss_y2, params_xy2)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
       update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss_y2, var_list=params_xy2)
@@ -606,6 +615,14 @@ class Model(object):
         td_map
       )
       print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
+
+      # policy_loss = 1 if(np.isinf(policy_loss)) else policy_loss
+      # value_loss = 1 if(np.isinf(value_loss)) else value_loss
+      # policy_entropy = 1 if(np.isinf(policy_entropy)) else policy_entropy
+      #
+      # policy_loss_sub3 = 1 if(np.isinf(policy_loss_sub3)) else policy_loss_sub3
+      # value_loss = 1 if(np.isinf(value_loss)) else value_loss
+      # policy_entropy = 1 if(np.isinf(policy_entropy)) else policy_entropy
 
       return policy_loss, value_loss, policy_entropy
 
