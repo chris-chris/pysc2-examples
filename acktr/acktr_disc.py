@@ -327,7 +327,7 @@ class Runner(object):
                                       sub6_actions, sub7_actions, sub8_actions,
                                       sub9_actions, sub10_actions,
                                       sub11_actions, sub12_actions,
-                                      x0*4, y0*4, x1*4, y1*4, x2*4, y2*4)
+                                      x0*2, y0*2, x1*2, y1*2, x2*2, y2*2)
 
       mb_obs.append(np.copy(self.obs))
       mb_base_actions.append(base_actions)
