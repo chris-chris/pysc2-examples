@@ -372,6 +372,8 @@ class Runner(object):
           logger.record_tabular("steps", self.steps)
           logger.record_tabular("episodes", self.episodes)
           logger.dump_tabular()
+          
+          self.total_reward[n] = 0
 
           model = self.model
           if self.callback is not None:
