@@ -25,7 +25,7 @@ def main():
       map_name="CollectMineralShards",
       step_mul=step_mul,
       visualize=True,
-      save_replay_steps=10000,
+      save_replay_episodes=10,
       replay_dir='replay',
       game_steps_per_episode=steps * step_mul) as env:
 

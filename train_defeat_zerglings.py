@@ -72,7 +72,7 @@ def main():
                output_formats=[HumanOutputFormat(sys.stdout)])
 
   with sc2_env.SC2Env(
-      "DefeatZerglingsAndBanelings",
+      map_name="DefeatZerglingsAndBanelings",
       step_mul=step_mul,
       visualize=True,
       game_steps_per_episode=steps * step_mul) as env:
