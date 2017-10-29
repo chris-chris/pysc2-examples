@@ -18,7 +18,7 @@ def worker(remote, map_name):
       cmd, data = remote.recv()
       if cmd == 'step':
         func = actions.FUNCTIONS[data[0][0]]
-        print("action : ", data, " func : ", func)
+        # print("action : ", data, " func : ", func)
         result = env.step(actions=data)
         ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
         reward = result[0].reward

@@ -146,7 +146,9 @@ class Model(object):
 
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
 
-    self.params = params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/common')
+    self.params_common = params_common = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/common')
+
+    self.params_pi1 = params_pi1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/pi1') + params_common
 
     # Base Action
 
@@ -159,21 +161,21 @@ class Model(object):
     self.joint_fisher = joint_fisher_loss = pg_fisher_loss + vf_fisher_loss
 
 
-    self.grads_check = grads = tf.gradients(train_loss, params)
+    self.grads_check = grads = tf.gradients(train_loss, params_pi1)
 
     with tf.device('/gpu:0'):
-      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip, \
-                                              momentum=0.9, kfac_update=1, epsilon=0.01, \
+      self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
+                                              momentum=0.9, kfac_update=1, epsilon=0.01,
                                               stats_decay=0.99, async=1, cold_iter=10, max_grad_norm=max_grad_norm)
 
-      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss, var_list=params)
-      train_op, q_runner = optim.apply_gradients(list(zip(grads, params)))
+      update_stats_op = optim.compute_and_apply_stats(joint_fisher_loss, var_list=params_pi1)
+      train_op, q_runner = optim.apply_gradients(list(zip(grads, params_pi1)))
 
     self.q_runner = q_runner
 
     # sub3
 
-    self.params_sub3 = params_sub3 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub3')
+    self.params_sub3 = params_sub3 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub3') + params_pi1
 
     train_loss_sub3 = pg_loss_sub3 + vf_coef * vf_loss
 
@@ -196,7 +198,7 @@ class Model(object):
 
     # sub4
 
-    self.params_sub4 = params_sub4 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub4')
+    self.params_sub4 = params_sub4 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub4') + params_pi1
 
     train_loss_sub4 = pg_loss_sub4 + vf_coef * vf_loss
 
@@ -220,7 +222,7 @@ class Model(object):
 
     # sub5
 
-    self.params_sub5 = params_sub5 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub5')
+    self.params_sub5 = params_sub5 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub5') + params_pi1
 
     train_loss_sub5 = pg_loss_sub5 + vf_coef * vf_loss
 
@@ -243,7 +245,7 @@ class Model(object):
 
     # sub6
 
-    self.params_sub6 = params_sub6 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub6')
+    self.params_sub6 = params_sub6 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub6') + params_pi1
 
     train_loss_sub6 = pg_loss_sub6 + vf_coef * vf_loss
 
@@ -267,7 +269,7 @@ class Model(object):
 
     # sub7
 
-    self.params_sub7 = params_sub7 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub7')
+    self.params_sub7 = params_sub7 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub7') + params_pi1
 
     train_loss_sub7 = pg_loss_sub7 + vf_coef * vf_loss
 
@@ -291,7 +293,7 @@ class Model(object):
 
     # sub8
 
-    self.params_sub8 = params_sub8 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub8')
+    self.params_sub8 = params_sub8 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub8') + params_pi1
 
     train_loss_sub8 = pg_loss_sub8 + vf_coef * vf_loss
 
@@ -316,7 +318,7 @@ class Model(object):
 
     # sub9
 
-    self.params_sub9 = params_sub9 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub9')
+    self.params_sub9 = params_sub9 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub9') + params_pi1
 
     train_loss_sub9 = pg_loss_sub9 + vf_coef * vf_loss
 
@@ -340,7 +342,7 @@ class Model(object):
 
     # sub10
 
-    self.params_sub10 = params_sub10 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub10')
+    self.params_sub10 = params_sub10 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub10') + params_pi1
 
     train_loss_sub10 = pg_loss_sub10 + vf_coef * vf_loss
 
@@ -364,7 +366,7 @@ class Model(object):
 
     # sub11
 
-    self.params_sub11 = params_sub11 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub11')
+    self.params_sub11 = params_sub11 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub11') + params_pi1
 
     train_loss_sub11 = pg_loss_sub11 + vf_coef * vf_loss
 
@@ -388,7 +390,7 @@ class Model(object):
 
     # sub12
 
-    self.params_sub12 = params_sub12 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub12')
+    self.params_sub12 = params_sub12 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub12') + params_pi1
 
     train_loss_sub12 = pg_loss_sub12 + vf_coef * vf_loss
 
@@ -412,7 +414,7 @@ class Model(object):
 
     # x0
 
-    self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0')
+    self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0') + params_common
 
     train_loss_x0 = pg_loss_x0 + vf_coef * vf_loss
 
@@ -458,7 +460,7 @@ class Model(object):
 
     # x1
 
-    self.params_xy1 = params_xy1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy1')
+    self.params_xy1 = params_xy1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy1') + params_common
 
     train_loss_x1 = pg_loss_x1 + vf_coef * vf_loss
 
@@ -505,7 +507,7 @@ class Model(object):
 
     # x2
 
-    self.params_xy2 = params_xy2 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy2')
+    self.params_xy2 = params_xy2 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy2') + params_common
 
     train_loss_x2 = pg_loss_x2 + vf_coef * vf_loss
 
@@ -837,7 +839,7 @@ class Runner(object):
           model = self.model
           if self.callback is not None:
             self.callback(locals(), globals())
-          
+      print("rewards : ", rewards)
       print("self.total_reward :", self.total_reward)
       self.update_obs(obs)
       mb_rewards.append(rewards)
