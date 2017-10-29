@@ -686,7 +686,7 @@ class Model(object):
          pg_loss_y2, entropy_y2, _train_y2],
         td_map
       )
-      print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
+      # print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
 
       # policy_loss = 1 if(np.isinf(policy_loss)) else policy_loss
       # value_loss = 1 if(np.isinf(value_loss)) else value_loss
@@ -766,7 +766,7 @@ class Runner(object):
 
   def valid_base_action(self, base_actions):
     for env_num, list in enumerate(self.available_actions):
-      if base_actions[env_num] not in list:
+      if base_actions[env_num] not in list or base_actions[env_num] == 0:
         if 0 in list:
           list.remove(0)
         print("env_num", env_num, " argmax is not valid. random pick ", list)
@@ -851,7 +851,7 @@ class Runner(object):
       pi1, pi_sub3, pi_sub4, pi_sub5, pi_sub6, pi_sub7, pi_sub8, pi_sub9, pi_sub10, pi_sub11, pi_sub12, x0, y0, x1, y1, x2, y2, values, states = self.model.step(self.obs, self.states, self.dones)
       # avail = self.env.available_actions()
       # print("pi1 : ", pi1)
-      #print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
+      print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1) # pi (2?, 524) * (2?, 524) masking
       # print("base_actions : ", base_actions)
       base_actions = self.valid_base_action(base_actions)
