@@ -83,23 +83,23 @@ class Model(object):
 
     ##training loss
     pg_loss = tf.reduce_mean(ADV*logpac) * tf.reduce_mean(ADV)
-    entropy = tf.reduce_mean(cat_entropy(train_model.pi)) # \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub3)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub4)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub5)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub6)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub7)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub8)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub9)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub10)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub11)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_sub12)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_x0)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_y0)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_x1)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_y1)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_x2)) \
-              # + tf.reduce_mean(cat_entropy(train_model.pi_y2))
+    entropy = tf.reduce_mean(cat_entropy(train_model.pi)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub3)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub4)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub5)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub6)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub7)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub8)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub9)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub10)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub11)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_sub12)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_x0)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_y0)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_x1)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_y1)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_x2)) \
+              + tf.reduce_mean(cat_entropy(train_model.pi_y2))
 
     pg_loss = pg_loss - ent_coef * entropy
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
@@ -179,9 +179,9 @@ class Runner(object):
     nh, nw, nc = (64, 64, 1)
     self.nsteps = nsteps
     self.nenv = nenv = env.num_envs
-    self.batch_ob_shape = (nenv*nsteps, nc*nstack, nh, nw)
+    self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
     self.batch_coord_shape = (nenv*nsteps, 64)
-    self.obs = np.zeros((nenv, nc*nstack, nh, nw), dtype=np.uint8)
+    self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.uint8)
     self.available_actions = None
     self.base_act_mask = np.full((self.nenv, 524), 0, dtype=np.uint8)
     obs, rewards, dones, available_actions = env.reset()
@@ -196,9 +196,11 @@ class Runner(object):
     self.steps = 0
     self.callback = callback
 
-  def update_obs(self, obs):
-    self.obs = np.roll(self.obs, shift=-1, axis=1)
-    self.obs[:, -1:, :, :] = obs[:, :, :, :]
+  def update_obs(self, obs): # (nenv, 1, 64, 64)
+    obs = np.reshape(obs, (self.nenv, 64, 64, 1))
+    self.obs = np.roll(self.obs, shift=-1, axis=3)
+    self.obs[:, :, :, -1] = obs[:, :, :, 0]
+    # could not broadcast input array from shape (4,1,64,64) into shape (4,4,64)
 
   def update_available(self, _available_actions):
     print("update_available : ", _available_actions)
@@ -309,25 +311,23 @@ class Runner(object):
       # sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)
       # print("base_actions : ", base_actions, "base_action_spec", base_action_spec,
       #       "sub1_act_mask :", sub1_act_mask, "sub2_act_mask :", sub2_act_mask, "sub3_act_mask :", sub3_act_mask)
-      sub3_actions = np.argmax(pi_sub3, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub4_actions = np.argmax(pi_sub4, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub5_actions = np.argmax(pi_sub5, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub6_actions = np.argmax(pi_sub6, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub7_actions = np.argmax(pi_sub7, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub8_actions = np.argmax(pi_sub8, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub9_actions = np.argmax(pi_sub9, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub10_actions = np.argmax(pi_sub10, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub11_actions = np.argmax(pi_sub11, axis=1) # pi (2?, 524) * (2?, 524) masking
-      sub12_actions = np.argmax(pi_sub12, axis=1) # pi (2?, 524) * (2?, 524) masking
+      sub3_actions = np.argmax(pi_sub3, axis=1) # pi (2?, 2)
+      sub4_actions = np.argmax(pi_sub4, axis=1) # pi (2?, 5)
+      sub5_actions = np.argmax(pi_sub5, axis=1) # pi (2?, 10)
+      sub6_actions = np.argmax(pi_sub6, axis=1) # pi (2?, 4)
+      sub7_actions = np.argmax(pi_sub7, axis=1) # pi (2?, 2)
+      sub8_actions = np.argmax(pi_sub8, axis=1) # pi (2?, 4)
+      sub9_actions = np.argmax(pi_sub9, axis=1) # pi (2?, 500)
+      sub10_actions = np.argmax(pi_sub10, axis=1) # pi (2?, 4)
+      sub11_actions = np.argmax(pi_sub11, axis=1) # pi (2?, 10)
+      sub12_actions = np.argmax(pi_sub12, axis=1) # pi (2?, 500)
 
       actions = self.construct_action(base_actions, base_action_spec,
                                       sub3_actions, sub4_actions, sub5_actions,
                                       sub6_actions, sub7_actions, sub8_actions,
                                       sub9_actions, sub10_actions,
                                       sub11_actions, sub12_actions,
-                                      x0, y0, x1, y1, x2, y2)
-      #sc2_actions.FUNCTIONS[base_action]
-      #sub_action = pi2 * avail2 #pi2 (2?, 500) * (2?, 500) masking
+                                      x0*4, y0*4, x1*4, y1*4, x2*4, y2*4)
 
       mb_obs.append(np.copy(self.obs))
       mb_base_actions.append(base_actions)
