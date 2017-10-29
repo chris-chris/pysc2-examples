@@ -1,0 +1,3 @@
+python-gflags
+git+https://github.com/chris-chris/gym-super-mario
+git+https://github.com/openai/baselines
