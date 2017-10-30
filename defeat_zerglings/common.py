@@ -96,6 +96,8 @@ def init(env, obs):
   return obs
 
 def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
+  my_dest = None
+  other_dest = None
   actions = []
   neutral_y, neutral_x = (player_relative == _PLAYER_NEUTRAL).nonzero()
   player_y, player_x = (selected == 1).nonzero()
@@ -118,7 +120,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
 
     for p in zip(neutral_x, neutral_y):
 
-      if(other_dest in locals()):
+      if(other_dest):
         dist = np.linalg.norm(np.array(other_dest) - np.array(p))
         if(dist<10):
           print("continue since partner will take care of it ", p)
@@ -134,7 +136,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
 
 
     solve_tsp = False
-    if(my_dest in locals()):
+    if(my_dest):
       dist = np.linalg.norm(np.array(player) - np.array(my_dest))
       if(dist < 2):
         solve_tsp = True
