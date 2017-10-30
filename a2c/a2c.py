@@ -688,13 +688,13 @@ class Runner(object):
         if(len(self.action_queue[env_num]) > 0):
           action = self.action_queue[env_num].pop(0)
           print("action :", action)
-          new_base_actions[env_num] = action.get("base_action",0)
-          if(new_base_actions[env_num] == 2):
-            base_actions[env_num] = 0
-          elif(new_base_actions[env_num] == 4):
-            base_actions[env_num] = 1
-          elif(new_base_actions[env_num] == 331):
-            base_actions[env_num] = 2
+          base_actions[env_num] = action.get("base_action",0)
+          # if(new_base_actions[env_num] == 2):
+          #   base_actions[env_num] = 0
+          # elif(new_base_actions[env_num] == 4):
+          #   base_actions[env_num] = 1
+          # elif(new_base_actions[env_num] == 331):
+          #   base_actions[env_num] = 2
 
           sub3_actions[env_num] = action.get("sub3",0)
           sub4_actions[env_num] = action.get("sub4",0)
@@ -717,7 +717,7 @@ class Runner(object):
       print("valid_base_actions : ", base_actions)
       new_base_actions = self.translabe_base_actions(base_actions)
       print("new_base_actions : ", new_base_actions)
-      
+
       base_action_spec = self.env.action_spec(new_base_actions)
 
       actions = self.construct_action(new_base_actions, base_action_spec,
