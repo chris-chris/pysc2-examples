@@ -158,6 +158,11 @@ class Model(object):
 
     train_loss = pg_loss + vf_coef * vf_loss
 
+    self.grads_check = grads = tf.gradients(train_loss, params_pi1)
+    grads = list(zip(grads, params_pi1))
+    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    _train = trainer.apply_gradients(grads)
+
     ##Fisher loss construction
     # self.pg_fisher = pg_fisher_loss = -tf.reduce_mean(logpac)
     # sample_net = train_model.vf + tf.random_normal(tf.shape(train_model.vf))
@@ -167,10 +172,6 @@ class Model(object):
     # print("train_loss :", train_loss, " pg_fisher :", pg_fisher_loss,
     #       " vf_fisher :", vf_fisher_loss, " joint_fisher_loss :", joint_fisher_loss)
 
-    self.grads_check = grads = tf.gradients(train_loss, params_pi1)
-    grads = list(zip(grads, params_pi1))
-    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
-    _train = trainer.apply_gradients(grads)
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -188,15 +189,16 @@ class Model(object):
 
     train_loss_sub3 = pg_loss_sub3 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub3 = pg_fisher_loss_sub3 = -tf.reduce_mean(logpac_sub3)
-    # self.joint_fisher_sub3 = joint_fisher_loss_sub3 = pg_fisher_loss_sub3 + vf_fisher_loss
-
     self.grads_check_sub3 = grads_sub3 = tf.gradients(train_loss_sub3, params_sub3)
 
     grads_sub3 = list(zip(grads_sub3, params_sub3))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub3 = trainer.apply_gradients(grads_sub3)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub3 = pg_fisher_loss_sub3 = -tf.reduce_mean(logpac_sub3)
+    # self.joint_fisher_sub3 = joint_fisher_loss_sub3 = pg_fisher_loss_sub3 + vf_fisher_loss
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -214,16 +216,17 @@ class Model(object):
 
     train_loss_sub4 = pg_loss_sub4 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub4 = pg_fisher_loss_sub4 = -tf.reduce_mean(logpac_sub4)
-    # self.joint_fisher_sub4 = joint_fisher_loss_sub4 = pg_fisher_loss_sub4 + vf_fisher_loss
-
-
     self.grads_check_sub4 = grads_sub4 = tf.gradients(train_loss_sub4, params_sub4)
 
     grads_sub4 = list(zip(grads_sub4, params_sub4))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub4 = trainer.apply_gradients(grads_sub4)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub4 = pg_fisher_loss_sub4 = -tf.reduce_mean(logpac_sub4)
+    # self.joint_fisher_sub4 = joint_fisher_loss_sub4 = pg_fisher_loss_sub4 + vf_fisher_loss
+
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -242,16 +245,17 @@ class Model(object):
 
     train_loss_sub5 = pg_loss_sub5 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub5 = pg_fisher_loss_sub5 = -tf.reduce_mean(logpac_sub5)
-    # self.joint_fisher_sub5 = joint_fisher_loss_sub5 = pg_fisher_loss_sub5 + vf_fisher_loss
-
-
     self.grads_check_sub5 = grads_sub5 = tf.gradients(train_loss_sub5, params_sub5)
 
     grads_sub5 = list(zip(grads_sub5, params_sub5))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub5 = trainer.apply_gradients(grads_sub5)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub5 = pg_fisher_loss_sub5 = -tf.reduce_mean(logpac_sub5)
+    # self.joint_fisher_sub5 = joint_fisher_loss_sub5 = pg_fisher_loss_sub5 + vf_fisher_loss
+
+
 
     #
     # with tf.device('/gpu:0'):
@@ -276,16 +280,17 @@ class Model(object):
 
     train_loss_sub6 = pg_loss_sub6 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub6 = pg_fisher_loss_sub6 = -tf.reduce_mean(logpac_sub6)
-    # self.joint_fisher_sub6 = joint_fisher_loss_sub6 = pg_fisher_loss_sub6 + vf_fisher_loss
-
-
     self.grads_check_sub6 = grads_sub6 = tf.gradients(train_loss_sub6, params_sub6)
 
     grads_sub6 = list(zip(grads_sub6, params_sub6))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub6 = trainer.apply_gradients(grads_sub6)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub6 = pg_fisher_loss_sub6 = -tf.reduce_mean(logpac_sub6)
+    # self.joint_fisher_sub6 = joint_fisher_loss_sub6 = pg_fisher_loss_sub6 + vf_fisher_loss
+
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -304,16 +309,17 @@ class Model(object):
 
     train_loss_sub7 = pg_loss_sub7 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub7 = pg_fisher_loss_sub7 = -tf.reduce_mean(logpac_sub7)
-    # self.joint_fisher_sub7 = joint_fisher_loss_sub7 = pg_fisher_loss_sub7 + vf_fisher_loss
-
-
     self.grads_check_sub7 = grads_sub7 = tf.gradients(train_loss_sub7, params_sub7)
 
     grads_sub7 = list(zip(grads_sub7, params_sub7))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub7 = trainer.apply_gradients(grads_sub7)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub7 = pg_fisher_loss_sub7 = -tf.reduce_mean(logpac_sub7)
+    # self.joint_fisher_sub7 = joint_fisher_loss_sub7 = pg_fisher_loss_sub7 + vf_fisher_loss
+
+
 
     #
     # with tf.device('/gpu:0'):
@@ -333,16 +339,16 @@ class Model(object):
 
     train_loss_sub8 = pg_loss_sub8 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub8 = pg_fisher_loss_sub8 = -tf.reduce_mean(logpac_sub8)
-    # self.joint_fisher_sub8 = joint_fisher_loss_sub8 = pg_fisher_loss_sub8 + vf_fisher_loss
-
-
     self.grads_check_sub8 = grads_sub8 = tf.gradients(train_loss_sub8, params_sub8)
 
     grads_sub8 = list(zip(grads_sub8, params_sub8))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub8 = trainer.apply_gradients(grads_sub8)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub8 = pg_fisher_loss_sub8 = -tf.reduce_mean(logpac_sub8)
+    # self.joint_fisher_sub8 = joint_fisher_loss_sub8 = pg_fisher_loss_sub8 + vf_fisher_loss
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -362,16 +368,16 @@ class Model(object):
 
     train_loss_sub9 = pg_loss_sub9 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub9 = pg_fisher_loss_sub9 = -tf.reduce_mean(logpac_sub9)
-    # self.joint_fisher_sub9 = joint_fisher_loss_sub9 = pg_fisher_loss_sub9 + vf_fisher_loss
-
-
     self.grads_check_sub9 = grads_sub9 = tf.gradients(train_loss_sub9, params_sub9)
 
     grads_sub9 = list(zip(grads_sub9, params_sub9))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub9 = trainer.apply_gradients(grads_sub9)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub9 = pg_fisher_loss_sub9 = -tf.reduce_mean(logpac_sub9)
+    # self.joint_fisher_sub9 = joint_fisher_loss_sub9 = pg_fisher_loss_sub9 + vf_fisher_loss
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -390,17 +396,18 @@ class Model(object):
 
     train_loss_sub10 = pg_loss_sub10 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub10 = pg_fisher_loss_sub10 = -tf.reduce_mean(logpac_sub10)
-    # self.joint_fisher_sub10 = joint_fisher_loss_sub10 = pg_fisher_loss_sub10 + vf_fisher_loss
-
-
     self.grads_check_sub10 = grads_sub10 = tf.gradients(train_loss_sub10, params_sub10)
 
 
     grads_sub10 = list(zip(grads_sub10, params_sub10))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub10 = trainer.apply_gradients(grads_sub10)
+
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub10 = pg_fisher_loss_sub10 = -tf.reduce_mean(logpac_sub10)
+    # self.joint_fisher_sub10 = joint_fisher_loss_sub10 = pg_fisher_loss_sub10 + vf_fisher_loss
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -419,16 +426,17 @@ class Model(object):
 
     train_loss_sub11 = pg_loss_sub11 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_sub11 = pg_fisher_loss_sub11 = -tf.reduce_mean(logpac_sub11)
-    # self.joint_fisher_sub11 = joint_fisher_loss_sub11 = pg_fisher_loss_sub11 + vf_fisher_loss
-
-
     self.grads_check_sub11 = grads_sub11 = tf.gradients(train_loss_sub11, params_sub11)
 
     grads_sub11 = list(zip(grads_sub11, params_sub11))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_sub11 = trainer.apply_gradients(grads_sub11)
+
+    ##Fisher loss construction
+    # self.pg_fisher_sub11 = pg_fisher_loss_sub11 = -tf.reduce_mean(logpac_sub11)
+    # self.joint_fisher_sub11 = joint_fisher_loss_sub11 = pg_fisher_loss_sub11 + vf_fisher_loss
+
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -446,17 +454,17 @@ class Model(object):
     self.params_sub12 = params_sub12 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub12')
 
     train_loss_sub12 = pg_loss_sub12 + vf_coef * vf_loss
+    self.grads_check_sub12 = grads_sub12 = tf.gradients(train_loss_sub12, params_sub12)
+
+    grads_sub12 = list(zip(grads_sub12, params_sub12))
+    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    _train_sub12 = trainer.apply_gradients(grads_sub12)
 
     ##Fisher loss construction
     # self.pg_fisher_sub12 = pg_fisher_loss_sub12 = -tf.reduce_mean(logpac_sub12)
     # self.joint_fisher_sub12 = joint_fisher_loss_sub12 = pg_fisher_loss_sub12 + vf_fisher_loss
 
 
-    self.grads_check_sub12 = grads_sub12 = tf.gradients(train_loss_sub12, params_sub12)
-
-    grads_sub12 = list(zip(grads_sub12, params_sub12))
-    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
-    _train_sub12 = trainer.apply_gradients(grads_sub12)
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -475,16 +483,16 @@ class Model(object):
 
     train_loss_x0 = pg_loss_x0 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_x0 = pg_fisher_loss_x0 = -tf.reduce_mean(logpac_x0)
-    # self.joint_fisher_x0 = joint_fisher_loss_x0 = pg_fisher_loss_x0 + vf_fisher_loss
-
-
     self.grads_check_x0 = grads_x0 = tf.gradients(train_loss_x0, params_xy0)
 
     grads_x0 = list(zip(grads_x0, params_xy0))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_x0 = trainer.apply_gradients(grads_x0)
+
+    ##Fisher loss construction
+    # self.pg_fisher_x0 = pg_fisher_loss_x0 = -tf.reduce_mean(logpac_x0)
+    # self.joint_fisher_x0 = joint_fisher_loss_x0 = pg_fisher_loss_x0 + vf_fisher_loss
+
 
     #
     # with tf.device('/gpu:0'):
@@ -502,16 +510,17 @@ class Model(object):
 
     train_loss_y0 = pg_loss_y0 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_y0 = pg_fisher_loss_y0 = -tf.reduce_mean(logpac_y0)
-    # self.joint_fisher_y0 = joint_fisher_loss_y0 = pg_fisher_loss_y0 + vf_fisher_loss
-
-
     self.grads_check_y0 = grads_y0 = tf.gradients(train_loss_y0, params_xy0)
 
     grads_y0 = list(zip(grads_y0, params_xy0))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_y0 = trainer.apply_gradients(grads_y0)
+
+    ##Fisher loss construction
+    # self.pg_fisher_y0 = pg_fisher_loss_y0 = -tf.reduce_mean(logpac_y0)
+    # self.joint_fisher_y0 = joint_fisher_loss_y0 = pg_fisher_loss_y0 + vf_fisher_loss
+
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -530,16 +539,17 @@ class Model(object):
 
     train_loss_x1 = pg_loss_x1 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_x1 = pg_fisher_loss_x1 = -tf.reduce_mean(logpac_x1)
-    # self.joint_fisher_x1 = joint_fisher_loss_x1 = pg_fisher_loss_x1 + vf_fisher_loss
-
-
     self.grads_check_x1 = grads_x1 = tf.gradients(train_loss_x1, params_xy1)
 
     grads_x1 = list(zip(grads_x1, params_xy1))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_x1 = trainer.apply_gradients(grads_x1)
+
+    ##Fisher loss construction
+    # self.pg_fisher_x1 = pg_fisher_loss_x1 = -tf.reduce_mean(logpac_x1)
+    # self.joint_fisher_x1 = joint_fisher_loss_x1 = pg_fisher_loss_x1 + vf_fisher_loss
+
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -556,17 +566,17 @@ class Model(object):
 
     train_loss_y1 = pg_loss_y1 + vf_coef * vf_loss
 
+    self.grads_check_y1 = grads_y1 = tf.gradients(train_loss_y1, params_xy1)
+
+    grads_y1 = list(zip(grads_y1, params_xy1))
+    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    _train_y1 = trainer.apply_gradients(grads_y1)
+
     ##Fisher loss construction
     # self.pg_fisher_y1 = pg_fisher_loss_y1 = -tf.reduce_mean(logpac_y1)
     # self.joint_fisher_y1 = joint_fisher_loss_y1 = pg_fisher_loss_y1 + vf_fisher_loss
 
 
-    self.grads_check_y1 = grads_y1 = tf.gradients(train_loss_y1, params_xy1)
-
-
-    grads_y1 = list(zip(grads_y1, params_xy1))
-    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
-    _train_y1 = trainer.apply_gradients(grads_y1)
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -585,17 +595,17 @@ class Model(object):
     self.params_xy2 = params_xy2 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy2') + params_common
 
     train_loss_x2 = pg_loss_x2 + vf_coef * vf_loss
-
-    ##Fisher loss construction
-    # self.pg_fisher_x2 = pg_fisher_loss_x2 = -tf.reduce_mean(logpac_x2)
-    # self.joint_fisher_x2 = joint_fisher_loss_x2 = pg_fisher_loss_x2 + vf_fisher_loss
-
-
     self.grads_check_x2 = grads_x2 = tf.gradients(train_loss_x2, params_xy2)
 
     grads_x2 = list(zip(grads_x2, params_xy2))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_x2 = trainer.apply_gradients(grads_x2)
+
+
+    ##Fisher loss construction
+    # self.pg_fisher_x2 = pg_fisher_loss_x2 = -tf.reduce_mean(logpac_x2)
+    # self.joint_fisher_x2 = joint_fisher_loss_x2 = pg_fisher_loss_x2 + vf_fisher_loss
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
@@ -612,16 +622,16 @@ class Model(object):
 
     train_loss_y2 = pg_loss_y2 + vf_coef * vf_loss
 
-    ##Fisher loss construction
-    # self.pg_fisher_y2 = pg_fisher_loss_y2 = -tf.reduce_mean(logpac_y2)
-    # self.joint_fisher_y2 = joint_fisher_loss_y2 = pg_fisher_loss_y2 + vf_fisher_loss
-
-
     self.grads_check_y2 = grads_y2 = tf.gradients(train_loss_y2, params_xy2)
 
     grads_y2 = list(zip(grads_y2, params_xy2))
     trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     _train_y2 = trainer.apply_gradients(grads_y2)
+
+    ##Fisher loss construction
+    # self.pg_fisher_y2 = pg_fisher_loss_y2 = -tf.reduce_mean(logpac_y2)
+    # self.joint_fisher_y2 = joint_fisher_loss_y2 = pg_fisher_loss_y2 + vf_fisher_loss
+
 
     # with tf.device('/gpu:0'):
     #   self.optim = optim = kfac.KfacOptimizer(learning_rate=PG_LR, clip_kl=kfac_clip,
