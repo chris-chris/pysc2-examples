@@ -32,21 +32,21 @@ class CnnPolicy(object):
       with tf.variable_scope("pi1", reuse=reuse):
         h3 = conv_to_fc(h2) # 131072
         h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # ?, 256
-        pi_ = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
-        pi = tf.nn.l2_normalize(pi_, 1)
+        pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
+        #pi = tf.nn.l2_normalize(pi_, 1)
 
       with tf.variable_scope("sub3", reuse=reuse):
-        pi_sub3_ = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
-        pi_sub3 = tf.nn.l2_normalize(pi_sub3_, 1)
+        pi_sub3 = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
+        #pi_sub3 = tf.nn.l2_normalize(pi_sub3_, 1)
       with tf.variable_scope("sub4", reuse=reuse):
-        pi_sub4_ = fc(pi, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 5) # ?, 5
-        pi_sub4 = tf.nn.l2_normalize(pi_sub4_, 1)
+        pi_sub4 = fc(pi, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 5) # ?, 5
+        #pi_sub4 = tf.nn.l2_normalize(pi_sub4_, 1)
       with tf.variable_scope("sub5", reuse=reuse):
-        pi_sub5_ = fc(pi, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
-        pi_sub5 = tf.nn.l2_normalize(pi_sub5_, 1)
+        pi_sub5 = fc(pi, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
+        #pi_sub5 = tf.nn.l2_normalize(pi_sub5_, 1)
       with tf.variable_scope("sub6", reuse=reuse):
-        pi_sub6_ = fc(pi, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
-        pi_sub6 = tf.nn.l2_normalize(pi_sub6_, 1)
+        pi_sub6 = fc(pi, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
+        #pi_sub6 = tf.nn.l2_normalize(pi_sub6_, 1)
       # with tf.variable_scope("sub7", reuse=reuse):
       #   pi_sub7_ = fc(pi, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
       #   pi_sub7 = tf.nn.l2_normalize(pi_sub7_, 1)
