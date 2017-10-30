@@ -98,6 +98,7 @@ def init(env, obs):
 def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
   my_dest = None
   other_dest = None
+  closest, min_dist = None, None
   actions = []
   neutral_y, neutral_x = (player_relative == _PLAYER_NEUTRAL).nonzero()
   player_y, player_x = (selected == 1).nonzero()
