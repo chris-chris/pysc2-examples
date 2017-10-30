@@ -689,12 +689,12 @@ class Runner(object):
           action = self.action_queue[env_num].pop(0)
           print("action :", action)
           base_actions[env_num] = action.get("base_action",0)
-          # if(new_base_actions[env_num] == 2):
-          #   base_actions[env_num] = 0
-          # elif(new_base_actions[env_num] == 4):
-          #   base_actions[env_num] = 1
-          # elif(new_base_actions[env_num] == 331):
-          #   base_actions[env_num] = 2
+          if(base_actions[env_num] == 2):
+            base_actions[env_num] = 0
+          elif(base_actions[env_num] == 4):
+            base_actions[env_num] = 1
+          elif(base_actions[env_num] == 331):
+            base_actions[env_num] = 2
 
           sub3_actions[env_num] = action.get("sub3",0)
           sub4_actions[env_num] = action.get("sub4",0)
