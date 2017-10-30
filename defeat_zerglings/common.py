@@ -100,8 +100,8 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
   other_dest = None
   closest, min_dist = None, None
   actions = []
-  neutral_y, neutral_x = (player_relative == _PLAYER_NEUTRAL).nonzero()
-  player_y, player_x = (selected == 1).nonzero()
+  neutral_x, neutral_y = (player_relative == _PLAYER_NEUTRAL).nonzero()
+  player_x, player_y = (selected == 1).nonzero()
 
   #for group_id in group_list:
   if("0" in dest_per_marine and "1" in dest_per_marine):
@@ -209,7 +209,7 @@ def group_init_queue(player_relative):
 
   actions = []
 
-  player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+  player_x, player_y = (player_relative == _PLAYER_FRIENDLY).nonzero()
   # try:
   #
   #   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
@@ -241,9 +241,9 @@ def group_init_queue(player_relative):
     if(len(unit_xy_list) >= 1):
       for idx, xy in enumerate(unit_xy_list):
         if(idx==0):
-          actions.append({"base_action":_SELECT_POINT, "sub6":0, "x0":xy[1], "y0":xy[0]})
+          actions.append({"base_action":_SELECT_POINT, "sub6":0, "x0":xy[0], "y0":xy[1]})
         else:
-          actions.append({"base_action":_SELECT_POINT, "sub6":1, "x0":xy[1], "y0":xy[0]})
+          actions.append({"base_action":_SELECT_POINT, "sub6":1, "x0":xy[0], "y0":xy[1]})
 
       actions.append({"base_action":_SELECT_CONTROL_GROUP, "sub4":_CONTROL_GROUP_SET, "sub5": group_id})
       unit_xy_list = []
@@ -254,9 +254,9 @@ def group_init_queue(player_relative):
   if(len(unit_xy_list) >= 1):
     for idx, xy in enumerate(unit_xy_list):
       if(idx==0):
-        actions.append({"base_action":_SELECT_POINT, "sub6":0, "x0":xy[1], "y0":xy[0]})
+        actions.append({"base_action":_SELECT_POINT, "sub6":0, "x0":xy[0], "y0":xy[1]})
       else:
-        actions.append({"base_action":_SELECT_POINT, "sub6":1, "x0":xy[1], "y0":xy[0]})
+        actions.append({"base_action":_SELECT_POINT, "sub6":1, "x0":xy[0], "y0":xy[1]})
 
     actions.append({"base_action":_SELECT_CONTROL_GROUP, "sub4":_CONTROL_GROUP_SET, "sub5":group_id})
 
