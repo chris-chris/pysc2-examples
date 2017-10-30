@@ -33,7 +33,7 @@ _SELECT_ALL = 0
 def init(env, obs):
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
   #print("init")
-  army_count = env._obs.observation.player_common.army_count
+  army_count = env._obs[0].observation.player_common.army_count
 
   if(army_count==0):
     return obs
@@ -315,7 +315,7 @@ def check_group_list(env, obs):
         #print("group error group_id : %s count : %s" % (id, group[1]))
         error = True
         return error
-  if(army_count != env._obs.observation.player_common.army_count):
+  if(army_count != env._obs[0].observation.player_common.army_count):
     error = True
     # print("army_count %s !=  %s env._obs.observation.player_common.army_count "
     #      % (army_count, env._obs.observation.player_common.army_count))

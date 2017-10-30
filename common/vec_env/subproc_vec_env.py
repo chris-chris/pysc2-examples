@@ -12,7 +12,8 @@ _SELECTED = features.SCREEN_FEATURES.selected.index
 def worker(remote, map_name, i):
 
   with sc2_env.SC2Env(
-      map_name=map_name
+      map_name=map_name,
+      step_mul=1
   ) as env:
 
     while True:
