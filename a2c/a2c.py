@@ -86,7 +86,7 @@ class Model(object):
     self.logits = logits = train_model.pi
 
     ##training loss
-    pg_loss = tf.reduce_mean(ADV*logpac) * tf.reduce_mean(ADV)
+    pg_loss = tf.reduce_mean(ADV*logpac)
 
     pg_loss_sub3 = tf.reduce_mean(ADV*logpac_sub3) * tf.reduce_mean(ADV)
     pg_loss_sub4 = tf.reduce_mean(ADV*logpac_sub4) * tf.reduce_mean(ADV)
@@ -766,6 +766,8 @@ class Runner(object):
 
     self.action_queue = [[] for _ in range(nenv)]
     self.group_list = [[] for _ in range(nenv)]
+    self.agent_state = ["IDLE" for _ in range(nenv)]
+    self.dest_per_marine = [{} for _ in range(nenv)]
 
   def update_obs(self, obs): # (self.nenv, 64, 64, 2)
     obs = np.asarray(obs, dtype=np.int32).swapaxes(1, 3)
@@ -901,6 +903,8 @@ class Runner(object):
           # Scripted Agent is only for even number agents
           self.action_queue[env_num] = common.group_init_queue(ob[:, :, -2])
           self.group_list[env_num] = common.update_group_list2(ob)
+
+
 
         base_actions[env_num] = 0
         sub3_actions[env_num] = 0
