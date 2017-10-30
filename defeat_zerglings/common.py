@@ -124,7 +124,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
       if(other_dest):
         dist = np.linalg.norm(np.array(other_dest) - np.array(p))
         if(dist<10):
-          print("continue since partner will take care of it ", p)
+          # print("continue since partner will take care of it ", p)
           continue
 
       pp = [p[0]//2*2, p[1]//2*2]

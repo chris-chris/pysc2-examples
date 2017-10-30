@@ -660,7 +660,7 @@ class Runner(object):
         player_relative = ob[:, :, -3]
 
         #if(common.check_group_list())
-        if(len(self.action_queue[env_num]) == 0 and common.check_group_list2(extra)):
+        if(len(self.action_queue[env_num]) == 0 and len(self.group_list[env_num]) == 0):
           # Scripted Agent is only for even number agents
           self.action_queue[env_num] = common.group_init_queue(player_relative)
         elif(len(self.action_queue[env_num]) == 0):
@@ -773,6 +773,7 @@ class Runner(object):
           logger.dump_tabular()
 
           self.total_reward[n] = 0
+          self.group_list[n] = []
 
           model = self.model
           if self.callback is not None:
