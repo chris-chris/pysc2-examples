@@ -10,10 +10,12 @@ from baselines.common import set_global_seeds, explained_variance
 from baselines.acktr.utils import discount_with_dones
 from baselines.acktr.utils import Scheduler, find_trainable_variables
 from baselines.acktr.utils import cat_entropy, mse
-from acktr import kfac
+# from a2c import kfac
 
 from pysc2.env import environment
 from pysc2.lib import actions as sc2_actions
+
+from defeat_zerglings import common
 
 # np.set_printoptions(threshold=np.inf)
 
@@ -157,10 +159,10 @@ class Model(object):
     train_loss = pg_loss + vf_coef * vf_loss
 
     ##Fisher loss construction
-    self.pg_fisher = pg_fisher_loss = -tf.reduce_mean(logpac)
-    sample_net = train_model.vf + tf.random_normal(tf.shape(train_model.vf))
-    self.vf_fisher = vf_fisher_loss = - vf_fisher_coef*tf.reduce_mean(tf.pow(train_model.vf - tf.stop_gradient(sample_net), 2))
-    self.joint_fisher = joint_fisher_loss = pg_fisher_loss + vf_fisher_loss
+    # self.pg_fisher = pg_fisher_loss = -tf.reduce_mean(logpac)
+    # sample_net = train_model.vf + tf.random_normal(tf.shape(train_model.vf))
+    # self.vf_fisher = vf_fisher_loss = - vf_fisher_coef*tf.reduce_mean(tf.pow(train_model.vf - tf.stop_gradient(sample_net), 2))
+    # self.joint_fisher = joint_fisher_loss = pg_fisher_loss + vf_fisher_loss
 
     # print("train_loss :", train_loss, " pg_fisher :", pg_fisher_loss,
     #       " vf_fisher :", vf_fisher_loss, " joint_fisher_loss :", joint_fisher_loss)
@@ -696,7 +698,23 @@ class Model(object):
       # value_loss = 1 if(np.isinf(value_loss)) else value_loss
       # policy_entropy = 1 if(np.isinf(policy_entropy)) else policy_entropy
 
-      return policy_loss, value_loss, policy_entropy
+      return policy_loss, value_loss, policy_entropy, \
+          policy_loss_sub3, policy_entropy_sub3, \
+          policy_loss_sub4, policy_entropy_sub4, \
+          policy_loss_sub5, policy_entropy_sub5, \
+          policy_loss_sub6, policy_entropy_sub6, \
+          policy_loss_sub7, policy_entropy_sub7, \
+          policy_loss_sub8, policy_entropy_sub8, \
+          policy_loss_sub9, policy_entropy_sub9, \
+          policy_loss_sub10, policy_entropy_sub10, \
+          policy_loss_sub11, policy_entropy_sub11, \
+          policy_loss_sub12, policy_entropy_sub12, \
+          policy_loss_x0, policy_entropy_x0, \
+          policy_loss_y0, policy_entropy_y0, \
+          policy_loss_x1, policy_entropy_x1, \
+          policy_loss_y1, policy_entropy_y1, \
+          policy_loss_x2, policy_entropy_x2, \
+          policy_loss_y2, policy_entropy_y2
 
     def save(save_path):
       ps = sess.run(params)
@@ -726,7 +744,7 @@ class Runner(object):
   def __init__(self, env, model, nsteps, nstack, gamma, callback=None):
     self.env = env
     self.model = model
-    nh, nw, nc = (64, 64, 1)
+    nh, nw, nc = (64, 64, 2)
     self.nsteps = nsteps
     self.nenv = nenv = env.num_envs
     self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
@@ -746,10 +764,13 @@ class Runner(object):
     self.steps = 0
     self.callback = callback
 
-  def update_obs(self, obs): # (nenv, 1, 64, 64)
-    obs = np.reshape(obs, (self.nenv, 64, 64, 1))
-    self.obs = np.roll(self.obs, shift=-1, axis=3)
-    self.obs[:, :, :, -1] = obs[:, :, :, 0]
+    self.action_queue = [[] for _ in range(nenv)]
+    self.group_list = [[] for _ in range(nenv)]
+
+  def update_obs(self, obs): # (self.nenv, 64, 64, 2)
+    obs = np.asarray(obs, dtype=np.int32).swapaxes(1, 3)
+    self.obs = np.roll(self.obs, shift=-2, axis=3)
+    self.obs[:, :, :, -2:] = obs[:, :, :, :]
     # could not broadcast input array from shape (4,1,64,64) into shape (4,4,64)
 
   def update_available(self, _available_actions):
@@ -854,21 +875,72 @@ class Runner(object):
       # print("base_actions : ", base_actions)
       base_actions = self.valid_base_action(base_actions)
       print("valid_base_actions : ", base_actions)
-      base_action_spec = self.env.action_spec(base_actions)
       # print("base_action_spec : ", base_action_spec)
       # sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)
       # print("base_actions : ", base_actions, "base_action_spec", base_action_spec,
       #       "sub1_act_mask :", sub1_act_mask, "sub2_act_mask :", sub2_act_mask, "sub3_act_mask :", sub3_act_mask)
-      sub3_actions = np.argmax(pi_sub3, axis=1) # pi (2?, 2)
-      sub4_actions = np.argmax(pi_sub4, axis=1) # pi (2?, 5)
-      sub5_actions = np.argmax(pi_sub5, axis=1) # pi (2?, 10)
-      sub6_actions = np.argmax(pi_sub6, axis=1) # pi (2?, 4)
+      sub3_actions = np.argmax(pi_sub3, axis=1) # pi (2?, 2) [1 0]
+      sub4_actions = np.argmax(pi_sub4, axis=1) # pi (2?, 5) [4 4]
+      sub5_actions = np.argmax(pi_sub5, axis=1) # pi (2?, 10) [1 4]
+      sub6_actions = np.argmax(pi_sub6, axis=1) # pi (2?, 4) [3 1]
       sub7_actions = np.argmax(pi_sub7, axis=1) # pi (2?, 2)
       sub8_actions = np.argmax(pi_sub8, axis=1) # pi (2?, 4)
       sub9_actions = np.argmax(pi_sub9, axis=1) # pi (2?, 500)
       sub10_actions = np.argmax(pi_sub10, axis=1) # pi (2?, 4)
       sub11_actions = np.argmax(pi_sub11, axis=1) # pi (2?, 10)
       sub12_actions = np.argmax(pi_sub12, axis=1) # pi (2?, 500)
+
+      # Scripted Agent Hacking
+
+      for env_num in range(self.nenv):
+        if(env_num % 2 != 0):
+          continue
+        ob = self.obs[env_num, :, :, :]
+        #if(common.check_group_list())
+        if(common.check_group_list2(ob) and len(self.action_queue[env_num]) == 0):
+          # Scripted Agent is only for even number agents
+          self.action_queue[env_num] = common.group_init_queue(ob[:, :, -2])
+          self.group_list[env_num] = common.update_group_list2(ob)
+
+        base_actions[env_num] = 0
+        sub3_actions[env_num] = 0
+        sub4_actions[env_num] = 0
+        sub5_actions[env_num] = 0
+        sub6_actions[env_num] = 0
+        sub7_actions[env_num] = 0
+        sub8_actions[env_num] = 0
+        sub9_actions[env_num] = 0
+        sub10_actions[env_num] = 0
+        sub11_actions[env_num] = 0
+        sub12_actions[env_num] = 0
+        x0[env_num] = 0
+        y0[env_num] = 0
+        x1[env_num] = 0
+        y1[env_num] = 0
+        x2[env_num] = 0
+        y2[env_num] = 0
+        if(len(self.action_queue[env_num]) > 0):
+          action = self.action_queue[env_num].pop(0)
+          print("action :", action)
+          base_actions[env_num] = action.get("base_action",0)
+          sub3_actions[env_num] = action.get("sub3",0)
+          sub4_actions[env_num] = action.get("sub4",0)
+          sub5_actions[env_num] = action.get("sub5",0)
+          sub6_actions[env_num] = action.get("sub6",0)
+          sub7_actions[env_num] = action.get("sub7",0)
+          sub8_actions[env_num] = action.get("sub8",0)
+          sub9_actions[env_num] = action.get("sub9",0)
+          sub10_actions[env_num] = action.get("sub10",0)
+          sub11_actions[env_num] = action.get("sub11",0)
+          sub12_actions[env_num] = action.get("sub12",0)
+          x0[env_num] = action.get("x0",0)
+          y0[env_num] = action.get("y0",0)
+          x1[env_num] = action.get("x1",0)
+          y1[env_num] = action.get("y1",0)
+          x2[env_num] = action.get("x2",0)
+          y2[env_num] = action.get("y2",0)
+
+      base_action_spec = self.env.action_spec(base_actions)
 
       actions = self.construct_action(base_actions, base_action_spec,
                                       sub3_actions, sub4_actions, sub5_actions,
@@ -1031,9 +1103,32 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
   #enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
   for update in range(1, total_timesteps//nbatch+1):
     obs, states, rewards, masks, actions, sub3, sub4, sub5, sub6, sub7, sub8, sub9, sub10, sub11, sub12, x0, y0, x1, y1, x2, y2, values = runner.run()
-    # (obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values)
-    policy_loss, value_loss, policy_entropy \
-      = model.train(obs, states, rewards, masks, actions, sub3, sub4, sub5, sub6, sub7, sub8, sub9, sub10, sub11, sub12, x0, y0, x1, y1, x2, y2, values)
+    policy_loss, value_loss, policy_entropy, \
+    policy_loss_sub3, policy_entropy_sub3, \
+    policy_loss_sub4, policy_entropy_sub4, \
+    policy_loss_sub5, policy_entropy_sub5, \
+    policy_loss_sub6, policy_entropy_sub6, \
+    policy_loss_sub7, policy_entropy_sub7, \
+    policy_loss_sub8, policy_entropy_sub8, \
+    policy_loss_sub9, policy_entropy_sub9, \
+    policy_loss_sub10, policy_entropy_sub10, \
+    policy_loss_sub11, policy_entropy_sub11, \
+    policy_loss_sub12, policy_entropy_sub12, \
+    policy_loss_x0, policy_entropy_x0, \
+    policy_loss_y0, policy_entropy_y0, \
+    policy_loss_x1, policy_entropy_x1, \
+    policy_loss_y1, policy_entropy_y1, \
+    policy_loss_x2, policy_entropy_x2, \
+    policy_loss_y2, policy_entropy_y2 \
+      = model.train(obs, states, rewards,
+                    masks, actions,
+                    sub3, sub4, sub5,
+                    sub6, sub7, sub8,
+                    sub9, sub10, sub11, sub12,
+                    x0, y0,
+                    x1, y1,
+                    x2, y2, values)
+
     model.old_obs = obs
     nseconds = time.time()-tstart
     fps = int((update*nbatch)/nseconds)

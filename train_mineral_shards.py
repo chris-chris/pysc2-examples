@@ -13,8 +13,8 @@ import deepq_mineral_shards
 import datetime
 
 from common.vec_env.subproc_vec_env import SubprocVecEnv
-from acktr.policies import CnnPolicy
-from acktr import acktr_disc
+from a2c.policies import CnnPolicy
+from a2c import a2c
 from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
 import threading
@@ -146,7 +146,7 @@ def main():
     env = SubprocVecEnv(FLAGS.num_cpu, FLAGS.map)
 
     policy_fn = CnnPolicy
-    acktr_disc.learn(
+    a2c.learn(
       policy_fn,
       env,
       seed,

@@ -24,8 +24,8 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_UNIT = actions.FUNCTIONS.select_unit.id
 _SELECT_POINT = actions.FUNCTIONS.select_point.id
 
-_NOT_QUEUED = [0]
-_SELECT_ALL = [0]
+_NOT_QUEUED = 0
+_SELECT_ALL = 0
 
 def init(env, obs):
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
@@ -42,7 +42,7 @@ def init(env, obs):
     obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
 
     player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
-    obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+    obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [[_SELECT_ALL]])])
   except Exception as e:
     print(e)
   for i in range(len(player_x)):
@@ -91,6 +91,99 @@ def init(env, obs):
     group_id += 1
 
   return obs
+
+
+def group_init_queue(player_relative):
+
+  actions = []
+
+  player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+  # try:
+  #
+  #   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+  #   actions.append({"base_action":_SELECT_ARMY, "sub7":_SELECT_ALL})
+  #
+  # except Exception as e:
+  #   print(e)
+  # for i in range(len(player_x)):
+  #   if i % 4 != 0:
+  #     continue
+  #
+  #   xy = [player_x[i], player_y[i]]
+  #   actions.append({"base_action":_SELECT_POINT, "sub6":0, "x0":xy[0], "y0":xy[1]})
+
+  group_id = 0
+  group_list = []
+  unit_xy_list = []
+  for i in range(len(player_x)):
+    if i % 4 != 0:
+      continue
+
+    if group_id > 9:
+      break
+
+    xy = [player_x[i], player_y[i]]
+    unit_xy_list.append(xy)
+    # 2/select_point (6/select_point_act [4]; 0/screen [84, 84])
+    # 4/select_control_group (4/control_group_act [5]; 5/control_group_id [10])
+    if(len(unit_xy_list) >= 1):
+      for idx, xy in enumerate(unit_xy_list):
+        if(idx==0):
+          actions.append({"base_action":_SELECT_POINT, "sub6":0, "x0":xy[1], "y0":xy[0]})
+        else:
+          actions.append({"base_action":_SELECT_POINT, "sub6":1, "x0":xy[1], "y0":xy[0]})
+
+      actions.append({"base_action":_SELECT_CONTROL_GROUP, "sub4":_CONTROL_GROUP_SET, "sub5": group_id})
+      unit_xy_list = []
+
+      group_list.append(group_id)
+      group_id += 1
+
+  if(len(unit_xy_list) >= 1):
+    for idx, xy in enumerate(unit_xy_list):
+      if(idx==0):
+        actions.append({"base_action":_SELECT_POINT, "sub6":0, "x0":xy[1], "y0":xy[0]})
+      else:
+        actions.append({"base_action":_SELECT_POINT, "sub6":1, "x0":xy[1], "y0":xy[0]})
+
+    actions.append({"base_action":_SELECT_CONTROL_GROUP, "sub4":_CONTROL_GROUP_SET, "sub5":group_id})
+
+    group_list.append(group_id)
+    group_id += 1
+
+  return actions
+
+def update_group_list2(obs):
+
+  group_count = 0
+  group_list = []
+
+  extra = obs[:,:,1] # (64, 64, 2)
+  for control_group_id in range(10):
+    unit_id = extra[1, control_group_id]
+    count = extra[2, control_group_id]
+    if(unit_id != 0):
+      group_count += 1
+      group_list.append(id)
+
+  return group_list
+
+def check_group_list2(obs):
+  army_count = 0
+  extra = obs[:,:,1] # (64, 64, 2)
+  for control_group_id in range(10):
+    unit_id = extra[1, control_group_id]
+    count = extra[2, control_group_id]
+    if(unit_id != 0):
+      army_count += count
+
+    if(count != 1):
+      return True
+
+  if(army_count != extra[0,0]):
+    return True
+
+  return False
 
 def update_group_list(obs):
   control_groups = obs[0].observation["control_groups"]
@@ -291,7 +384,7 @@ def marine_action(env, obs, player, action):
     elif(coord[1]>63):
       coord[1] = 63
 
-    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [[_NOT_QUEUED], coord])]
 
   elif(action <= 1): #Attack
 
@@ -299,7 +392,7 @@ def marine_action(env, obs, player, action):
 
     coord = closest
 
-    new_action = [sc2_actions.FunctionCall(_ATTACK_SCREEN, [_NOT_QUEUED, coord])]
+    new_action = [sc2_actions.FunctionCall(_ATTACK_SCREEN, [[_NOT_QUEUED], coord])]
 
     #print("action : %s Attack Coord : %s" % (action, coord))
 
@@ -326,23 +419,23 @@ def marine_action(env, obs, player, action):
     elif(coord[1]>63):
       coord[1] = 63
 
-    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [[_NOT_QUEUED], coord])]
 
   elif(action == 4): #UP
     coord = [player[0], player[1] - 3]
-    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [[_NOT_QUEUED], coord])]
 
   elif(action == 5): #DOWN
     coord = [player[0], player[1] + 3]
-    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [[_NOT_QUEUED], coord])]
 
   elif(action == 6): #LEFT
     coord = [player[0] - 3, player[1]]
-    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [[_NOT_QUEUED], coord])]
 
   elif(action == 7): #RIGHT
     coord = [player[0] + 3, player[1]]
-    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+    new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [[_NOT_QUEUED], coord])]
 
     #print("action : %s Back Coord : %s" % (action, coord))
 

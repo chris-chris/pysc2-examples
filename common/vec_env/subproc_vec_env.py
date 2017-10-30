@@ -8,7 +8,7 @@ from pysc2.lib import features, actions
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 
 
-def worker(remote, map_name):
+def worker(remote, map_name, i):
 
   with sc2_env.SC2Env(
       map_name=map_name
@@ -18,9 +18,21 @@ def worker(remote, map_name):
       cmd, data = remote.recv()
       if cmd == 'step':
         func = actions.FUNCTIONS[data[0][0]]
-        print("action : ", data, " func : ", func)
+        print("agent(",i," ) action : ", data, " func : ", func)
         result = env.step(actions=data)
         ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
+        extra = np.zeros((1, 64, 64))
+        control_groups = result[0].observation["control_groups"]
+        army_count = env._obs[0].observation.player_common.army_count
+        extra[0,0,0] = army_count
+        for id, group in enumerate(control_groups):
+          control_group_id = id
+          unit_id = group[0]
+          count = group[1]
+          #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
+          extra[0,1, control_group_id] = unit_id
+          extra[0,2, control_group_id] = count
+        ob = np.append(ob, extra, axis=0) # (2, 64, 64)
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
@@ -34,6 +46,18 @@ def worker(remote, map_name):
       elif cmd == 'reset':
         result = env.reset()
         ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
+        extra = np.zeros((1, 64, 64))
+        control_groups = result[0].observation["control_groups"]
+        army_count = env._obs[0].observation.player_common.army_count
+        extra[0,0,0] = army_count
+        for id, group in enumerate(control_groups):
+          control_group_id = id
+          unit_id = group[0]
+          count = group[1]
+          #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
+          extra[0,1, control_group_id] = unit_id
+          extra[0,2, control_group_id] = count
+        ob = np.append(ob, extra, axis=0) # (2, 64, 64)
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
@@ -55,8 +79,16 @@ class SubprocVecEnv(VecEnv):
     """
 
     self.remotes, self.work_remotes = zip(*[Pipe() for _ in range(nenvs)])
-    self.ps = [Process(target=worker, args=(work_remote, (map_name)))
-               for (work_remote,) in zip(self.work_remotes,)]
+
+    self.ps = []
+    i = 0
+    for (work_remote,) in zip(self.work_remotes,):
+      self.ps.append(Process(target=worker, args=(work_remote, map_name, i)))
+      i += 1
+
+    #
+    # self.ps = [Process(target=worker, args=(work_remote, (map_name)))
+    #            for (work_remote,) in zip(self.work_remotes,)]
     for p in self.ps:
       p.start()
 
