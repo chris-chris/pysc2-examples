@@ -118,7 +118,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
 
     for p in zip(neutral_x, neutral_y):
 
-      if(other_dest):
+      if(other_dest in locals()):
         dist = np.linalg.norm(np.array(other_dest) - np.array(p))
         if(dist<10):
           print("continue since partner will take care of it ", p)
