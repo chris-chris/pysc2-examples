@@ -630,10 +630,6 @@ class Runner(object):
 
       # pi (2?, 524) * (2?, 524) masking
       # print("base_actions : ", base_actions)
-      base_actions = self.valid_base_action(base_actions)
-      print("valid_base_actions : ", base_actions)
-      new_base_actions = self.translabe_base_actions(base_actions)
-      print("new_base_actions : ", new_base_actions)
       # print("base_action_spec : ", base_action_spec)
       # sub1_act_mask, sub2_act_mask, sub3_act_mask = self.get_sub_act_mask(base_action_spec)
       # print("base_actions : ", base_actions, "base_action_spec", base_action_spec,
@@ -717,6 +713,11 @@ class Runner(object):
           # x2[env_num] = action.get("x2",0)
           # y2[env_num] = action.get("y2",0)
 
+      base_actions = self.valid_base_action(base_actions)
+      print("valid_base_actions : ", base_actions)
+      new_base_actions = self.translabe_base_actions(base_actions)
+      print("new_base_actions : ", new_base_actions)
+      
       base_action_spec = self.env.action_spec(new_base_actions)
 
       actions = self.construct_action(new_base_actions, base_action_spec,
