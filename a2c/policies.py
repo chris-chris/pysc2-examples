@@ -9,19 +9,19 @@ class CnnPolicy(object):
 
   def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
     nbatch = nenv*nsteps
-    nh, nw, nc = (64,64,2)
+    nh, nw, nc = (64,64,3)
     ob_shape = (nbatch, nh, nw, nc*nstack)
-    nact = 524
+    nact = 3 # 524
     nsub3 = 2
     nsub4 = 5
     nsub5 = 10
     nsub6 = 4
-    nsub7 = 2
-    nsub8 = 4
-    nsub9 = 500
-    nsub10 = 4
-    nsub11 = 10
-    nsub12 = 500
+    # nsub7 = 2
+    # nsub8 = 4
+    # nsub9 = 500
+    # nsub10 = 4
+    # nsub11 = 10
+    # nsub12 = 500
 
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
@@ -47,24 +47,24 @@ class CnnPolicy(object):
       with tf.variable_scope("sub6", reuse=reuse):
         pi_sub6_ = fc(pi, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
         pi_sub6 = tf.nn.l2_normalize(pi_sub6_, 1)
-      with tf.variable_scope("sub7", reuse=reuse):
-        pi_sub7_ = fc(pi, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
-        pi_sub7 = tf.nn.l2_normalize(pi_sub7_, 1)
-      with tf.variable_scope("sub8", reuse=reuse):
-        pi_sub8_ = fc(pi, 'pi_sub8', nsub8, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
-        pi_sub8 = tf.nn.l2_normalize(pi_sub8_, 1)
-      with tf.variable_scope("sub9", reuse=reuse):
-        pi_sub9_ = fc(pi, 'pi_sub9', nsub9, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
-        pi_sub9 = tf.nn.l2_normalize(pi_sub9_, 1)
-      with tf.variable_scope("sub10", reuse=reuse):
-        pi_sub10_ = fc(pi, 'pi_sub10', nsub10, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
-        pi_sub10 = tf.nn.l2_normalize(pi_sub10_, 1)
-      with tf.variable_scope("sub11", reuse=reuse):
-        pi_sub11_ = fc(pi, 'pi_sub11', nsub11, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
-        pi_sub11 = tf.nn.l2_normalize(pi_sub11_, 1)
-      with tf.variable_scope("sub12", reuse=reuse):
-        pi_sub12_ = fc(pi, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
-        pi_sub12 = tf.nn.l2_normalize(pi_sub12_, 1)
+      # with tf.variable_scope("sub7", reuse=reuse):
+      #   pi_sub7_ = fc(pi, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
+      #   pi_sub7 = tf.nn.l2_normalize(pi_sub7_, 1)
+      # with tf.variable_scope("sub8", reuse=reuse):
+      #   pi_sub8_ = fc(pi, 'pi_sub8', nsub8, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
+      #   pi_sub8 = tf.nn.l2_normalize(pi_sub8_, 1)
+      # with tf.variable_scope("sub9", reuse=reuse):
+      #   pi_sub9_ = fc(pi, 'pi_sub9', nsub9, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
+      #   pi_sub9 = tf.nn.l2_normalize(pi_sub9_, 1)
+      # with tf.variable_scope("sub10", reuse=reuse):
+      #   pi_sub10_ = fc(pi, 'pi_sub10', nsub10, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
+      #   pi_sub10 = tf.nn.l2_normalize(pi_sub10_, 1)
+      # with tf.variable_scope("sub11", reuse=reuse):
+      #   pi_sub11_ = fc(pi, 'pi_sub11', nsub11, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
+      #   pi_sub11 = tf.nn.l2_normalize(pi_sub11_, 1)
+      # with tf.variable_scope("sub12", reuse=reuse):
+      #   pi_sub12_ = fc(pi, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
+      #   pi_sub12 = tf.nn.l2_normalize(pi_sub12_, 1)
 
       vf_ = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # ?, 1
       vf = tf.nn.l2_normalize(vf_, 1)
@@ -77,19 +77,19 @@ class CnnPolicy(object):
         pi_y0 = xy0[:,0,:,0] # ?, 64
         y0 = sample(pi_y0) # ?,
 
-      with tf.variable_scope("xy1", reuse=reuse):
-        xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-        pi_x1 = xy1[:,:,0,0] # ?, 64
-        x1 = sample(pi_x1) # ?,
-        pi_y1 = xy1[:,0,:,0] # ?, 64
-        y1 = sample(pi_y1) # ?,
-
-      with tf.variable_scope("xy2", reuse=reuse):
-        xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-        pi_x2 = xy2[:,:,0,0] # ?, 64
-        x2 = sample(pi_x2) # ?,
-        pi_y2 = xy2[:,0,:,0] # ?, 64
-        y2 = sample(pi_y2) # ?,
+      # with tf.variable_scope("xy1", reuse=reuse):
+      #   xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
+      #   pi_x1 = xy1[:,:,0,0] # ?, 64
+      #   x1 = sample(pi_x1) # ?,
+      #   pi_y1 = xy1[:,0,:,0] # ?, 64
+      #   y1 = sample(pi_y1) # ?,
+      #
+      # with tf.variable_scope("xy2", reuse=reuse):
+      #   xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
+      #   pi_x2 = xy2[:,:,0,0] # ?, 64
+      #   x2 = sample(pi_x2) # ?,
+      #   pi_y2 = xy2[:,0,:,0] # ?, 64
+      #   y2 = sample(pi_y2) # ?,
 
     v0 = vf[:, 0]
     a0 = sample(pi)
@@ -97,8 +97,14 @@ class CnnPolicy(object):
 
     def step(ob, *_args, **_kwargs):
       #obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values
-      _pi1, _pi_sub3, _pi_sub4, _pi_sub5, _pi_sub6, _pi_sub7, _pi_sub8, _pi_sub9, _pi_sub10, _pi_sub11, _pi_sub12, _x0, _y0, _x1, _y1, _x2, _y2, _v = sess.run([pi, pi_sub3, pi_sub4, pi_sub5, pi_sub6, pi_sub7, pi_sub8, pi_sub9, pi_sub10, pi_sub11, pi_sub12, x0, y0, x1, y1, x2, y2, v0], {X:ob})
-      return _pi1, _pi_sub3, _pi_sub4, _pi_sub5, _pi_sub6, _pi_sub7, _pi_sub8, _pi_sub9, _pi_sub10, _pi_sub11, _pi_sub12, _x0, _y0, _x1, _y1, _x2, _y2, _v, [] #dummy state
+      _pi1, _pi_sub3, _pi_sub4, _pi_sub5, _pi_sub6, \
+      _x0, _y0, \
+      _v = sess.run([pi, pi_sub3, pi_sub4, pi_sub5, pi_sub6,
+                     x0, y0,
+                     v0], {X:ob})
+      return _pi1, _pi_sub3, _pi_sub4, _pi_sub5, _pi_sub6, \
+             _x0, _y0, \
+             _v, [] #dummy state
 
     def value(ob, *_args, **_kwargs):
       return sess.run(v0, {X:ob})
@@ -109,18 +115,18 @@ class CnnPolicy(object):
     self.pi_sub4 = pi_sub4
     self.pi_sub5 = pi_sub5
     self.pi_sub6 = pi_sub6
-    self.pi_sub7 = pi_sub7
-    self.pi_sub8 = pi_sub8
-    self.pi_sub9 = pi_sub9
-    self.pi_sub10 = pi_sub10
-    self.pi_sub11 = pi_sub11
-    self.pi_sub12 = pi_sub12
+    # self.pi_sub7 = pi_sub7
+    # self.pi_sub8 = pi_sub8
+    # self.pi_sub9 = pi_sub9
+    # self.pi_sub10 = pi_sub10
+    # self.pi_sub11 = pi_sub11
+    # self.pi_sub12 = pi_sub12
     self.pi_x0 = pi_x0
     self.pi_y0 = pi_y0
-    self.pi_x1 = pi_x1
-    self.pi_y1 = pi_y1
-    self.pi_x2 = pi_x2
-    self.pi_y2 = pi_y2
+    # self.pi_x1 = pi_x1
+    # self.pi_y1 = pi_y1
+    # self.pi_x2 = pi_x2
+    # self.pi_y2 = pi_y2
     self.vf = vf
     self.step = step
     self.value = value

@@ -6,6 +6,7 @@ from pysc2.env import sc2_env
 from pysc2.lib import features, actions
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
+_SELECTED = features.SCREEN_FEATURES.selected.index
 
 
 def worker(remote, map_name, i):
@@ -20,7 +21,8 @@ def worker(remote, map_name, i):
         func = actions.FUNCTIONS[data[0][0]]
         print("agent(",i," ) action : ", data, " func : ", func)
         result = env.step(actions=data)
-        ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
+        ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] #  (1, 64, 64)
+        selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 64, 64)
         extra = np.zeros((1, 64, 64))
         control_groups = result[0].observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
@@ -32,7 +34,8 @@ def worker(remote, map_name, i):
           #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
           extra[0,1, control_group_id] = unit_id
           extra[0,2, control_group_id] = count
-        ob = np.append(ob, extra, axis=0) # (2, 64, 64)
+        ob = np.append(ob, selected, axis=0) #  (2, 64, 64)
+        ob = np.append(ob, extra, axis=0) # (3, 64, 64)
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
@@ -46,6 +49,7 @@ def worker(remote, map_name, i):
       elif cmd == 'reset':
         result = env.reset()
         ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
+        selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 64, 64)
         extra = np.zeros((1, 64, 64))
         control_groups = result[0].observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
@@ -57,7 +61,8 @@ def worker(remote, map_name, i):
           #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
           extra[0,1, control_group_id] = unit_id
           extra[0,2, control_group_id] = count
-        ob = np.append(ob, extra, axis=0) # (2, 64, 64)
+        ob = np.append(ob, selected, axis=0) #  (2, 64, 64)
+        ob = np.append(ob, extra, axis=0) # (3, 64, 64)
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]

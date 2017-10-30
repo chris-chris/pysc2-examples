@@ -4,6 +4,9 @@ from pysc2.lib import actions as sc2_actions
 from pysc2.lib import features
 from pysc2.lib import actions
 
+import random
+from mineral.tsp2 import multistart_localsearch, mk_matrix, distL2
+
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 
 _UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
@@ -92,6 +95,112 @@ def init(env, obs):
 
   return obs
 
+def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
+  actions = []
+  neutral_y, neutral_x = (player_relative == _PLAYER_NEUTRAL).nonzero()
+  player_y, player_x = (selected == 1).nonzero()
+
+  #for group_id in group_list:
+  if("0" in dest_per_marine and "1" in dest_per_marine):
+    if(group_id == 0):
+      my_dest = dest_per_marine["0"]
+      other_dest = dest_per_marine["1"]
+    else:
+      my_dest = dest_per_marine["1"]
+      other_dest = dest_per_marine["0"]
+
+  r = random.randint(0,1)
+
+  if(len(player_x)>0) and r == 0 :
+
+    player = [int(player_x.mean()), int(player_y.mean())]
+    points = [player]
+
+    for p in zip(neutral_x, neutral_y):
+
+      if(other_dest):
+        dist = np.linalg.norm(np.array(other_dest) - np.array(p))
+        if(dist<10):
+          print("continue since partner will take care of it ", p)
+          continue
+
+      pp = [p[0]//2*2, p[1]//2*2]
+      if(pp not in points):
+        points.append(pp)
+
+      dist = np.linalg.norm(np.array(player) - np.array(p))
+      if not min_dist or dist < min_dist:
+        closest, min_dist = p, dist
+
+
+    solve_tsp = False
+    if(my_dest in locals()):
+      dist = np.linalg.norm(np.array(player) - np.array(my_dest))
+      if(dist < 2):
+        solve_tsp = True
+
+    if(my_dest is None):
+      solve_tsp = True
+
+    if(len(points)< 2):
+      solve_tsp = False
+
+    if(solve_tsp):
+      # function for printing best found solution when it is found
+      from time import clock
+      init = clock()
+      def report_sol(obj, s=""):
+        print("cpu:%g\tobj:%g\ttour:%s" % \
+              (clock(), obj, s))
+
+      #print("points: %s" % points)
+      n, D = mk_matrix(points, distL2)
+      # multi-start local search
+      #print("random start local search:", n)
+      niter = 50
+      tour,z = multistart_localsearch(niter, n, D)
+
+      #print("best found solution (%d iterations): z = %g" % (niter, z))
+      #print(tour)
+
+      left, right = None, None
+      for idx in tour:
+        if(tour[idx] == 0):
+          if(idx == len(tour) - 1):
+            #print("optimal next : ", tour[0])
+            right = points[tour[0]]
+            left = points[tour[idx-1]]
+          elif(idx==0):
+            #print("optimal next : ", tour[idx+1])
+            right = points[tour[idx+1]]
+            left = points[tour[len(tour)-1]]
+          else:
+            #print("optimal next : ", tour[idx+1])
+            right = points[tour[idx+1]]
+            left = points[tour[idx-1]]
+
+      left_d = np.linalg.norm(np.array(player) - np.array(left))
+      right_d = np.linalg.norm(np.array(player) - np.array(right))
+      if(right_d > left_d):
+        closest = left
+      else:
+        closest = right
+
+    #print("optimal next :" , closest)
+    dest_per_marine[str(group_id)] = closest
+    #print("dest_per_marine", self.dest_per_marine)
+    #dest_per_marine {'0': [56, 26], '1': [52, 6]}
+
+    if(closest):
+      actions.append({"base_action":_MOVE_SCREEN, "sub3":_NOT_QUEUED,
+                      "x0": closest[0], "y0": closest[1]})
+  elif(len(group_list)>0):
+
+    group_id = random.randint(0,len(group_list)-1)
+    actions.append({"base_action":_SELECT_CONTROL_GROUP,
+                    "sub4":_CONTROL_GROUP_RECALL,
+                    "sub5": group_id})
+  return actions, group_id, dest_per_marine
 
 def group_init_queue(player_relative):
 
@@ -153,32 +262,29 @@ def group_init_queue(player_relative):
 
   return actions
 
-def update_group_list2(obs):
+def update_group_list2(extra):
 
   group_count = 0
   group_list = []
 
-  extra = obs[:,:,1] # (64, 64, 2)
   for control_group_id in range(10):
-    unit_id = extra[1, control_group_id]
-    count = extra[2, control_group_id]
+    unit_id = extra[control_group_id, 1]
+    count = extra[control_group_id, 2]
+
     if(unit_id != 0):
       group_count += 1
-      group_list.append(id)
+      group_list.append(control_group_id)
 
   return group_list
 
-def check_group_list2(obs):
+def check_group_list2(extra):
   army_count = 0
-  extra = obs[:,:,1] # (64, 64, 2)
+   # (64, 64, 3)
   for control_group_id in range(10):
-    unit_id = extra[1, control_group_id]
-    count = extra[2, control_group_id]
+    unit_id = extra[control_group_id, 1]
+    count = extra[control_group_id, 2]
     if(unit_id != 0):
       army_count += count
-
-    if(count != 1):
-      return True
 
   if(army_count != extra[0,0]):
     return True
