@@ -660,11 +660,12 @@ class Runner(object):
         player_relative = ob[:, :, -3]
 
         #if(common.check_group_list())
+        self.group_list[env_num] = common.update_group_list2(extra)
         if(len(self.action_queue[env_num]) == 0 and len(self.group_list[env_num]) == 0):
           # Scripted Agent is only for even number agents
           self.action_queue[env_num] = common.group_init_queue(player_relative)
         elif(len(self.action_queue[env_num]) == 0):
-          self.group_list[env_num] = common.update_group_list2(extra)
+
           self.action_queue[env_num], self.group_id[env_num], self.dest_per_marine[env_num] =\
             common.solve_tsp(player_relative, selected,
                              self.group_list[env_num], self.group_id[env_num], self.dest_per_marine[env_num])
