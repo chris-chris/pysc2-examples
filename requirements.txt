@@ -3,3 +3,4 @@ git+https://github.com/openai/baselines
 numpy
 tensorflow
 absl-py
+cloudpickle
