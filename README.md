@@ -72,10 +72,10 @@ $ python train_mineral_shards.py --algorithm=deepq --prioritized=True --dueling=
 ```
 
 
-## 4-2. Train it with ACKTR(A3C)
+## 4-2. Train it with A2C(A3C)
 
 ```shell
-$ python train_mineral_shards.py --algorithm=acktr --num_cpu=16--timesteps=2000000
+$ python train_mineral_shards.py --algorithm=a2c --num_cpu=16--timesteps=2000000
 ```
 
 
@@ -83,10 +83,12 @@ $ python train_mineral_shards.py --algorithm=acktr --num_cpu=16--timesteps=20000
 |----------------------|-------------------------------------------------|---------------------------------|----------------|
 | map                  | Gym Environment                                 | CollectMineralShards            | string         |
 | log                  | logging type  : tensorboard, stdout             | tensorboard                     | string         |
-| algorithm            | Currently, support 2 algorithms  : deepq, acktr | acktr                           | string         |
+| algorithm            | Currently, support 2 algorithms  : deepq, a2c   | a2c                             | string         |
 | timesteps            | Total training steps                            | 2000000                         | int            |
 | exploration_fraction | exploration fraction                            | 0.5                             | float          |
 | prioritized          | Whether using prioritized replay for DQN        | False                           | boolean        |
 | dueling              | Whether using dueling network for DQN           | False                           | boolean        |
-| num_cpu              | number of agents for A3C(acktr)                 | 4                               | int            |
+| lr                   | learning rate (if 0 set random e-5 ~ e-3)       | 0.0005                          | float          |
+| num_cpu              | number of agents for A2C(acktr)                 | 4                               | int            |
+| nsteps               | number of agents for A2C(acktr)                 | 20                              | int            |
 
