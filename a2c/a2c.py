@@ -772,13 +772,13 @@ class Runner(object):
           logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
           logger.record_tabular("steps", self.steps)
           logger.record_tabular("episodes", self.episodes)
-          
+
           if(n%2==0):
-            logger.record_tabular("reward(script)", self.total_reward[n])
-            logger.record_tabular("mean reward(script)", mean_100ep_reward)
+            logger.record_tabular("reward script", self.total_reward[n])
+            logger.record_tabular("mean reward script", mean_100ep_reward)
           else:
-            logger.record_tabular("reward(a2c)", self.total_reward[n])
-            logger.record_tabular("mean reward(a2c)", mean_100ep_reward)
+            logger.record_tabular("reward a2c", self.total_reward[n])
+            logger.record_tabular("mean reward a2c", mean_100ep_reward)
 
           logger.dump_tabular()
 
