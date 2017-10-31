@@ -465,16 +465,16 @@ class Runner(object):
   def __init__(self, env, model, nsteps, nstack, gamma, callback=None):
     self.env = env
     self.model = model
-    nh, nw, nc = (64, 64, 3)
+    nh, nw, nc = (32, 32, 3)
     self.nsteps = nsteps
     self.nenv = nenv = env.num_envs
     self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
-    self.batch_coord_shape = (nenv*nsteps, 64)
+    self.batch_coord_shape = (nenv*nsteps, 32)
     self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.uint8)
     self.available_actions = None
     self.base_act_mask = np.full((self.nenv, 3), 0, dtype=np.uint8)
     obs, rewards, dones, available_actions = env.reset()
-    self.update_obs(obs) # (2,13,64,64)
+    self.update_obs(obs) # (2,13,32,32)
     self.update_available(available_actions)
     self.gamma = gamma
     self.states = model.initial_state
@@ -493,11 +493,11 @@ class Runner(object):
     self.dest_per_marine = [{} for _ in range(nenv)]
     self.group_id = [1 for _ in range(nenv)]
 
-  def update_obs(self, obs): # (self.nenv, 64, 64, 2)
+  def update_obs(self, obs): # (self.nenv, 32, 32, 2)
     obs = np.asarray(obs, dtype=np.int32).swapaxes(1, 3)
     self.obs = np.roll(self.obs, shift=-3, axis=3)
     self.obs[:, :, :, -3:] = obs[:, :, :, :]
-    # could not broadcast input array from shape (4,1,64,64) into shape (4,4,64)
+    # could not broadcast input array from shape (4,1,32,32) into shape (4,4,32)
 
   def update_available(self, _available_actions):
     #print("update_available : ", _available_actions)
@@ -579,11 +579,11 @@ class Runner(object):
       for arg_idx, arg in enumerate(spec.args):
         #print("arg", arg)
         #print("arg.id", arg.id)
-        if(arg.id==0): # screen (64,64) x0, y0
+        if(arg.id==0): # screen (32,32) x0, y0
           args.append([int(x0[env_num]), int(y0[env_num])])
-        # elif(arg.id==1): # minimap (64,64) x1, y1
+        # elif(arg.id==1): # minimap (32,32) x1, y1
         #   args.append([int(x1[env_num]), int(y1[env_num])])
-        # elif(arg.id==2): # screen2 (64,64) x2, y2
+        # elif(arg.id==2): # screen2 (32,32) x2, y2
         #   args.append([int(x2[env_num]), y2[env_num]])
         elif(arg.id==3): # pi3 queued (2)
           args.append([int(sub3[env_num])])
@@ -875,8 +875,8 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
   set_global_seeds(seed)
 
   nenvs = nprocs
-  ob_space = (64, 64, 1) # env.observation_space
-  ac_space = (64, 64)
+  ob_space = (32, 32, 1) # env.observation_space
+  ac_space = (32, 32)
   make_model = lambda : Model(policy, ob_space, ac_space, nenvs,
                               total_timesteps,
                               nprocs=nprocs,

@@ -35,31 +35,32 @@ def init(env, obs):
   #print("init")
   army_count = env._obs[0].observation.player_common.army_count
 
-  if(army_count==0):
-    return obs
-  try:
-    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-    obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
 
-    player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
-    obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [[_SELECT_ALL]])])
-  except Exception as e:
-    print(e)
-  for i in range(len(player_x)):
-    if i % 4 != 0:
-      continue
-
-    xy = [player_x[i], player_y[i]]
-    obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[0], xy])])
+  # if(army_count==0):
+  #   return obs
+  # try:
+  #   obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  #   obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  #   obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  #   obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  #   obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  #
+  #   obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [[_SELECT_ALL]])])
+  # except Exception as e:
+  #   print(e)
+  # for i in range(len(player_x)):
+  #   if i % 4 != 0:
+  #     continue
+  #
+  #   xy = [player_x[i], player_y[i]]
+  #   obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[0], xy])])
 
   group_id = 0
   group_list = []
   unit_xy_list = []
   for i in range(len(player_x)):
-    if i % 4 != 0:
+    if i % 2 != 0:
       continue
 
     if group_id > 9:
@@ -228,7 +229,7 @@ def group_init_queue(player_relative):
   group_list = []
   unit_xy_list = []
   for i in range(len(player_x)):
-    if i % 4 != 0:
+    if i % 2 != 0:
       continue
 
     if group_id > 9:

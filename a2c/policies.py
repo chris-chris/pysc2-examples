@@ -9,7 +9,7 @@ class CnnPolicy(object):
 
   def __init__(self, sess, ob_space, ac_space, nenv, nsteps, nstack, reuse=False):
     nbatch = nenv*nsteps
-    nh, nw, nc = (64,64,3)
+    nh, nw, nc = (32,32,3)
     ob_shape = (nbatch, nh, nw, nc*nstack)
     nact = 3 # 524
     nsub3 = 2
@@ -26,8 +26,8 @@ class CnnPolicy(object):
     X = tf.placeholder(tf.uint8, ob_shape) #obs
     with tf.variable_scope("model", reuse=reuse):
       with tf.variable_scope("common", reuse=reuse):
-        h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 16
-        h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 64, 64, 32
+        h = conv(tf.cast(X, tf.float32), 'c1', nf=16, rf=5, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 32, 32, 16
+        h2 = conv(h, 'c2', nf=32, rf=3, stride=1, init_scale=np.sqrt(2), pad="SAME") # ?, 32, 32, 32
 
       with tf.variable_scope("pi1", reuse=reuse):
         h3 = conv_to_fc(h2) # 131072
@@ -69,24 +69,24 @@ class CnnPolicy(object):
 
       with tf.variable_scope("xy0", reuse=reuse):
         # 1 x 1 convolution for dimensionality reduction
-        xy0 = conv(h2, 'xy0', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-        pi_x0 = xy0[:,:,0,0] # ?, 64
+        xy0 = conv(h2, 'xy0', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 32, 32, 1)
+        pi_x0 = xy0[:,:,0,0] # ?, 32
         x0 = sample(pi_x0) # ?,
-        pi_y0 = xy0[:,0,:,0] # ?, 64
+        pi_y0 = xy0[:,0,:,0] # ?, 32
         y0 = sample(pi_y0) # ?,
 
       # with tf.variable_scope("xy1", reuse=reuse):
-      #   xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      #   pi_x1 = xy1[:,:,0,0] # ?, 64
+      #   xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 32, 32, 1)
+      #   pi_x1 = xy1[:,:,0,0] # ?, 32
       #   x1 = sample(pi_x1) # ?,
-      #   pi_y1 = xy1[:,0,:,0] # ?, 64
+      #   pi_y1 = xy1[:,0,:,0] # ?, 32
       #   y1 = sample(pi_y1) # ?,
       #
       # with tf.variable_scope("xy2", reuse=reuse):
-      #   xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 64, 64, 1)
-      #   pi_x2 = xy2[:,:,0,0] # ?, 64
+      #   xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 32, 32, 1)
+      #   pi_x2 = xy2[:,:,0,0] # ?, 32
       #   x2 = sample(pi_x2) # ?,
-      #   pi_y2 = xy2[:,0,:,0] # ?, 64
+      #   pi_y2 = xy2[:,0,:,0] # ?, 32
       #   y2 = sample(pi_y2) # ?,
 
     v0 = vf[:, 0]
@@ -142,7 +142,7 @@ class GaussianMlpPolicy(object):
     adv_n = tf.placeholder(tf.float32, shape=[None], name="adv") # advantage function estimate
     oldlogprob_n = tf.placeholder(tf.float32, shape=[None], name='oldlogprob') # log probability of previous actions
     wd_dict = {}
-    h1 = tf.nn.tanh(dense(ob_no, 64, "h1", weight_init=U.normc_initializer(1.0), bias_init=0.0, weight_loss_dict=wd_dict))
+    h1 = tf.nn.tanh(dense(ob_no, 32, "h1", weight_init=U.normc_initializer(1.0), bias_init=0.0, weight_loss_dict=wd_dict))
     h2 = tf.nn.tanh(dense(h1, 64, "h2", weight_init=U.normc_initializer(1.0), bias_init=0.0, weight_loss_dict=wd_dict))
     mean_na = dense(h2, ac_dim, "mean", weight_init=U.normc_initializer(0.1), bias_init=0.0, weight_loss_dict=wd_dict) # Mean control output
     self.wd_dict = wd_dict
