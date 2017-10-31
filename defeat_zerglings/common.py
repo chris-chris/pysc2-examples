@@ -99,8 +99,8 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
   other_dest = None
   closest, min_dist = None, None
   actions = []
-  neutral_x, neutral_y = (player_relative == _PLAYER_NEUTRAL).nonzero()
-  player_x, player_y = (selected == 1).nonzero()
+  neutral_y, neutral_x = (player_relative == 1).nonzero()
+  player_y, player_x = (selected == 1).nonzero()
 
   #for group_id in group_list:
   if("0" in dest_per_marine and "1" in dest_per_marine):
@@ -194,14 +194,12 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
     #dest_per_marine {'0': [56, 26], '1': [52, 6]}
 
     if(closest):
-      actions.append({"base_action":_MOVE_SCREEN, "sub3":_NOT_QUEUED,
+      actions.append({"base_action":2,
                       "x0": closest[0], "y0": closest[1]})
   elif(len(group_list)>0):
 
     group_id = random.randint(0,len(group_list)-1)
-    actions.append({"base_action":_SELECT_CONTROL_GROUP,
-                    "sub4":_CONTROL_GROUP_RECALL,
-                    "sub5": group_id})
+    actions.append({"base_action":group_id})
   return actions, group_id, dest_per_marine
 
 def group_init_queue(player_relative):
@@ -262,14 +260,15 @@ def group_init_queue(player_relative):
 
   return actions
 
-def update_group_list2(extra):
+def update_group_list2(control_group):
 
   group_count = 0
   group_list = []
 
-  for control_group_id in range(10):
-    unit_id = extra[control_group_id, 1]
-    count = extra[control_group_id, 2]
+  for control_group_id, data in enumerate(control_group):
+
+    unit_id = data[0]
+    count = data[1]
 
     if(unit_id != 0):
       group_count += 1

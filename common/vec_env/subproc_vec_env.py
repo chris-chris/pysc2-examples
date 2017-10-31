@@ -25,21 +25,21 @@ def worker(remote, map_name, i):
         func = actions.FUNCTIONS[data[0][0]]
         print("agent(",i," ) action : ", data, " func : ", func)
         result = env.step(actions=data)
-        ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] #  (1, 32, 32)
+        ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int) #  (1, 32, 32)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
-        extra = np.zeros((1, 32, 32))
+        # extra = np.zeros((1, 32, 32))
         control_groups = result[0].observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
-        extra[0,0,0] = army_count
-        for id, group in enumerate(control_groups):
-          control_group_id = id
-          unit_id = group[0]
-          count = group[1]
-          #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
-          extra[0,1, control_group_id] = unit_id
-          extra[0,2, control_group_id] = count
-        ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
-        ob = np.append(ob, extra, axis=0) # (3, 32, 32)
+        # extra[0,0,0] = army_count
+        # for id, group in enumerate(control_groups):
+        #   control_group_id = id
+        #   unit_id = group[0]
+        #   count = group[1]
+        #   #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
+        #   extra[0,1, control_group_id] = unit_id
+        #   extra[0,2, control_group_id] = count
+        #ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
+        #ob = np.append(ob, extra, axis=0) # (3, 32, 32)
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
@@ -49,29 +49,29 @@ def worker(remote, map_name, i):
           # reward = result[0].reward
           # done = result[0].step_type == environment.StepType.LAST
           info = result[0].observation["available_actions"]
-        remote.send((ob, reward, done, info))
+        remote.send((ob, reward, done, info, army_count, control_groups, selected))
       elif cmd == 'reset':
         result = env.reset()
         common.init(env, result)
-        ob = result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1]
+        ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
-        extra = np.zeros((1, 32, 32))
+        # extra = np.zeros((1, 32, 32))
         control_groups = result[0].observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
-        extra[0,0,0] = army_count
-        for id, group in enumerate(control_groups):
-          control_group_id = id
-          unit_id = group[0]
-          count = group[1]
-          #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
-          extra[0,1, control_group_id] = unit_id
-          extra[0,2, control_group_id] = count
-        ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
-        ob = np.append(ob, extra, axis=0) # (3, 32, 32)
+        # extra[0,0,0] = army_count
+        # for id, group in enumerate(control_groups):
+        #   control_group_id = id
+        #   unit_id = group[0]
+        #   count = group[1]
+        #   #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
+        #   extra[0,1, control_group_id] = unit_id
+        #   extra[0,2, control_group_id] = count
+        # ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
+        # ob = np.append(ob, extra, axis=0) # (3, 32, 32)
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
-        remote.send((ob, reward, done, info))
+        remote.send((ob, reward, done, info, army_count, control_groups, selected))
       elif cmd == 'close':
         remote.close()
         break
@@ -110,15 +110,15 @@ class SubprocVecEnv(VecEnv):
     for remote, action in zip(self.remotes, actions):
       remote.send(('step', [action]))
     results = [remote.recv() for remote in self.remotes]
-    obs, rews, dones, infos = zip(*results)
-    return np.stack(obs), np.stack(rews), np.stack(dones), infos
+    obs, rews, dones, infos, army_counts, control_groups, selected = zip(*results)
+    return np.stack(obs), np.stack(rews), np.stack(dones), infos, army_counts, control_groups, np.stack(selected)
 
   def reset(self):
     for remote in self.remotes:
       remote.send(('reset', None))
     results = [remote.recv() for remote in self.remotes]
-    obs, rews, dones, infos = zip(*results)
-    return np.stack(obs), np.stack(rews), np.stack(dones), infos
+    obs, rews, dones, infos, army_counts, control_groups, selected = zip(*results)
+    return np.stack(obs), np.stack(rews), np.stack(dones), infos, army_counts, control_groups, np.stack(selected)
 
   def action_spec(self, base_actions):
     for remote, base_action in zip(self.remotes, base_actions):
