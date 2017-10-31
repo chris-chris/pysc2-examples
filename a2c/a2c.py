@@ -481,6 +481,8 @@ class Runner(object):
     self.dones = [False for _ in range(nenv)]
     self.total_reward = [0.0 for _ in range(nenv)]
     self.episode_rewards = [0.0]
+    self.episode_rewards_script = [0.0]
+    self.episode_rewards_a2c = [0.0]
     self.episodes = 0
     self.steps = 0
     self.callback = callback
@@ -765,6 +767,19 @@ class Runner(object):
           self.episodes += 1
           num_episodes = self.episodes
           self.episode_rewards.append(self.total_reward[n])
+
+          if(n%2==0):
+            self.episode_rewards_script.append(self.total_reward[n])
+            mean_100ep_reward_script = round(np.mean(self.episode_rewards_script[-101:-1]), 1)
+            logger.record_tabular("reward script", self.total_reward[n])
+            logger.record_tabular("mean reward script", mean_100ep_reward_script)
+          else:
+            self.episode_rewards_a2c.append(self.total_reward[n])
+            mean_100ep_reward_a2c = round(np.mean(self.episode_rewards_a2c[-101:-1]), 1)
+            logger.record_tabular("reward a2c", self.total_reward[n])
+            logger.record_tabular("mean reward a2c", mean_100ep_reward_a2c)
+
+
           mean_100ep_reward = round(np.mean(self.episode_rewards[-101:-1]), 1)
 
           print("env %s done! reward : %s mean_100ep_reward : %s " % (n, self.total_reward[n], mean_100ep_reward))
@@ -773,12 +788,6 @@ class Runner(object):
           logger.record_tabular("steps", self.steps)
           logger.record_tabular("episodes", self.episodes)
 
-          if(n%2==0):
-            logger.record_tabular("reward script", self.total_reward[n])
-            logger.record_tabular("mean reward script", mean_100ep_reward)
-          else:
-            logger.record_tabular("reward a2c", self.total_reward[n])
-            logger.record_tabular("mean reward a2c", mean_100ep_reward)
 
           logger.dump_tabular()
 
