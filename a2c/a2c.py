@@ -729,6 +729,7 @@ class Runner(object):
           # sub12_actions[env_num] = action.get("sub12",0)
           x0[env_num] = action.get("x0",0)
           y0[env_num] = action.get("y0",0)
+          xy0[env_num] = y0[env_num] * 32 + x0[env_num]
           # x1[env_num] = action.get("x1",0)
           # y1[env_num] = action.get("y1",0)
           # x2[env_num] = action.get("x2",0)
