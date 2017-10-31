@@ -17,6 +17,8 @@ from a2c.policies import CnnPolicy
 from a2c import a2c
 from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
+import random
+
 import threading
 import time
 
@@ -60,16 +62,24 @@ def main():
   print("num_cpu : %s" % FLAGS.num_cpu)
   print("lr : %s" % FLAGS.lr)
 
+  if(FLAGS.lr == 0):
+    FLAGS.lr = random.uniform(0.00001, 0.001)
+    
+  print("random lr : %s" % FLAGS.lr)
+
   logdir = "tensorboard"
   if (FLAGS.algorithm == "deepq"):
     logdir = "tensorboard/mineral/%s/%s_%s_prio%s_duel%s_lr%s/%s" % (
       FLAGS.algorithm, FLAGS.timesteps, FLAGS.exploration_fraction,
       FLAGS.prioritized, FLAGS.dueling, FLAGS.lr, start_time)
   elif (FLAGS.algorithm == "a2c"):
-    logdir = "tensorboard/mineral/%s/%s_num%s_lr%s/%s" % (FLAGS.algorithm,
-                                                          FLAGS.timesteps,
-                                                          FLAGS.num_cpu,
-                                                          FLAGS.lr, start_time)
+    logdir = "tensorboard/mineral/%s/%s_num%s_lr%s_nsteps%s/%s" % (
+      FLAGS.algorithm,
+      FLAGS.timesteps,
+      FLAGS.num_cpu,
+      FLAGS.lr,
+      FLAGS.nsteps,
+      start_time)
 
   if (FLAGS.log == "tensorboard"):
     Logger.DEFAULT \
@@ -116,34 +126,6 @@ def main():
 
     seed = 0
 
-    # def make_env(rank):
-    #   # env = sc2_env.SC2Env(
-    #   #   "CollectMineralShards",
-    #   #   step_mul=step_mul)
-    #   # return env
-    #   #env.seed(seed + rank)
-    #   def _thunk():
-    #     env = sc2_env.SC2Env(
-    #         map_name=FLAGS.map,
-    #         step_mul=step_mul,
-    #         visualize=True)
-    #     #env.seed(seed + rank)
-    #     if logger.get_dir():
-    #      env = bench.Monitor(env, os.path.join(logger.get_dir(), "{}.monitor.json".format(rank)))
-    #     return env
-    #   return _thunk
-
-    # agents = [Agent()
-    #           for _ in range(num_cpu)]
-    #
-    # for agent in agents:
-    #   time.sleep(1)
-    #   agent.daemon = True
-    #   agent.start()
-
-    # agent_controller = AgentController(agents)
-
-    #set_global_seeds(seed)
     env = SubprocVecEnv(FLAGS.num_cpu, FLAGS.map)
 
     policy_fn = CnnPolicy
@@ -160,60 +142,6 @@ def main():
 
 from pysc2.env import environment
 import numpy as np
-
-
-class Agent(threading.Thread):
-
-  def __init__(self):
-    threading.Thread.__init__(self)
-    self.env = sc2_env.SC2Env(map_name=FLAGS.map, step_mul=step_mul)
-
-    def run(self):
-      print(threading.currentThread().getName(), self.receive_messages)
-
-    def do_thing_with_message(self, message):
-      if self.receive_messages:
-        print(threading.currentThread().getName(),
-              "Received %s".format(message))
-
-
-class AgentController(object):
-
-  def __init__(self, agents):
-    self.agents = agents
-    self.observation_space = (64, 64, 1)
-
-  def step(self, actions):
-    obs, rewards, dones, infos = [], [], [], []
-    for idx, agent in enumerate(self.agents):
-      result = agent.env.step(actions=actions[idx])
-      ob = result[0].observation["screen"]
-      reward = result[0].reward
-      done = result[0].step_type == environment.StepType.LAST
-      info = result[0].observation["available_actions"]
-      obs.append(ob)
-      rewards.append(reward)
-      dones.append(done)
-      infos.append(info)
-    return np.stack(obs), np.stack(rewards), np.stack(dones), np.stack(infos)
-
-  def close(self, actions):
-    for idx, agent in enumerate(self.agents):
-      agent.env.close()
-
-  def reset(self):
-    obs, rewards, dones, infos = [], [], [], []
-    for idx, agent in enumerate(self.agents):
-      result = agent.env.reset()
-      ob = result[0].observation["screen"]
-      reward = result[0].reward
-      done = result[0].step_type == environment.StepType.LAST
-      info = result[0].observation["available_actions"]
-      obs.append(ob)
-      rewards.append(reward)
-      dones.append(done)
-      infos.append(info)
-    return np.stack(obs), np.stack(rewards), np.stack(dones), np.stack(infos)
 
 
 def deepq_callback(locals, globals):
