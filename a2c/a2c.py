@@ -613,8 +613,8 @@ class Runner(object):
       base_actions = np.argmax(pi1 * self.base_act_mask, axis=1)
       xy0 = np.argmax(pi_xy0, axis=1)
 
-      x0 = xy0 % 32
-      y0 = xy0 / 32
+      x0 = (xy0 % 32).astype(int)
+      y0 = (xy0 / 32).astype(int)
 
       # pi (2?, 524) * (2?, 524) masking
       # print("base_actions : ", base_actions)
