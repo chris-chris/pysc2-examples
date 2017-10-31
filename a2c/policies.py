@@ -35,7 +35,8 @@ class CnnPolicy(object):
       with tf.variable_scope("pi1", reuse=reuse):
         h3 = conv_to_fc(h2) # 131072
         h4 = fc(h3, 'fc1', nh=256, init_scale=np.sqrt(2)) # ?, 256
-        pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
+        pi_ = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
+        pi = tf.nn.softmax(pi_)
 
         vf_ = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # ?, 1
         vf = tf.clip_by_value(vf_, -10, 10)
@@ -72,7 +73,8 @@ class CnnPolicy(object):
       with tf.variable_scope("xy0", reuse=reuse):
         # 1 x 1 convolution for dimensionality reduction
         pi_xy0_ = conv(h2, 'xy0', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 32, 32, 1)
-        pi_xy0 = conv_to_fc(pi_xy0_) # 32 x 32 => 1024
+        pi_xy0__ = conv_to_fc(pi_xy0_) # 32 x 32 => 1024
+        pi_xy0 = tf.nn.softmax(pi_xy0__)
 
         #pi_xy0 =
         # TODO! bug!!!

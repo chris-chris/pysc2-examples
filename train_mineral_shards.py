@@ -48,7 +48,7 @@ PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 max_mean_reward = 0
 last_filename = ""
 
-start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
+start_time = datetime.datetime.now().strftime("%m%d%H%M")
 
 
 def main():
@@ -67,17 +67,19 @@ def main():
     
   print("random lr : %s" % FLAGS.lr)
 
+  lr_round = round(FLAGS.lr, 5)
+
   logdir = "tensorboard"
   if (FLAGS.algorithm == "deepq"):
     logdir = "tensorboard/mineral/%s/%s_%s_prio%s_duel%s_lr%s/%s" % (
       FLAGS.algorithm, FLAGS.timesteps, FLAGS.exploration_fraction,
-      FLAGS.prioritized, FLAGS.dueling, FLAGS.lr, start_time)
+      FLAGS.prioritized, FLAGS.dueling, lr_round, start_time)
   elif (FLAGS.algorithm == "a2c"):
     logdir = "tensorboard/mineral/%s/%s_num%s_lr%s_nsteps%s/%s" % (
       FLAGS.algorithm,
       FLAGS.timesteps,
       FLAGS.num_cpu,
-      FLAGS.lr,
+      lr_round,
       FLAGS.nsteps,
       start_time)
 
