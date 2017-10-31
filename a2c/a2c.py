@@ -166,7 +166,7 @@ class Model(object):
 
     # sub3
 
-    self.params_sub3 = params_sub3 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub3')
+    self.params_sub3 = params_sub3 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub3') + params_pi1
 
     train_loss_sub3 = pg_loss_sub3 + vf_coef * vf_loss
 
@@ -179,7 +179,7 @@ class Model(object):
 
     # sub4
 
-    self.params_sub4 = params_sub4 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub4')
+    self.params_sub4 = params_sub4 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub4') + params_pi1
 
     train_loss_sub4 = pg_loss_sub4 + vf_coef * vf_loss
 
@@ -192,7 +192,7 @@ class Model(object):
 
     # sub5
 
-    self.params_sub5 = params_sub5 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub5')
+    self.params_sub5 = params_sub5 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub5') + params_pi1
 
     train_loss_sub5 = pg_loss_sub5 + vf_coef * vf_loss
 
@@ -206,7 +206,7 @@ class Model(object):
 
     # sub6
 
-    self.params_sub6 = params_sub6 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub6')
+    self.params_sub6 = params_sub6 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/sub6') + params_pi1
 
     train_loss_sub6 = pg_loss_sub6 + vf_coef * vf_loss
 
@@ -307,7 +307,7 @@ class Model(object):
 
     self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0') + params_common
 
-    train_loss_x0 = pg_loss_x0 + vf_coef * vf_loss
+    train_loss_x0 = pg_loss_x0
 
     self.grads_check_x0 = grads_x0 = tf.gradients(train_loss_x0, params_xy0)
 
@@ -319,7 +319,7 @@ class Model(object):
 
     # y0
 
-    train_loss_y0 = pg_loss_y0 + vf_coef * vf_loss
+    train_loss_y0 = pg_loss_y0
 
     self.grads_check_y0 = grads_y0 = tf.gradients(train_loss_y0, params_xy0)
 

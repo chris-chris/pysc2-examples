@@ -32,13 +32,14 @@ flags.DEFINE_string("map", "CollectMineralShards",
                     "Name of a map to use to play.")
 start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
 flags.DEFINE_string("log", "tensorboard", "logging type(stdout, tensorboard)")
-flags.DEFINE_string("algorithm", "acktr", "RL algorithm to use.")
+flags.DEFINE_string("algorithm", "a2c", "RL algorithm to use.")
 flags.DEFINE_integer("timesteps", 2000000, "Steps to train")
 flags.DEFINE_float("exploration_fraction", 0.5, "Exploration Fraction")
 flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
 flags.DEFINE_boolean("dueling", True, "dueling")
 flags.DEFINE_float("lr", 0.0005, "Learning rate")
 flags.DEFINE_integer("num_cpu", 4, "number of cpus")
+flags.DEFINE_integer("nsteps", 20, "number of batch steps for A2C")
 
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -64,7 +65,7 @@ def main():
     logdir = "tensorboard/mineral/%s/%s_%s_prio%s_duel%s_lr%s/%s" % (
       FLAGS.algorithm, FLAGS.timesteps, FLAGS.exploration_fraction,
       FLAGS.prioritized, FLAGS.dueling, FLAGS.lr, start_time)
-  elif (FLAGS.algorithm == "acktr"):
+  elif (FLAGS.algorithm == "a2c"):
     logdir = "tensorboard/mineral/%s/%s_num%s_lr%s/%s" % (FLAGS.algorithm,
                                                           FLAGS.timesteps,
                                                           FLAGS.num_cpu,
@@ -107,7 +108,7 @@ def main():
         callback=deepq_callback)
       act.save("mineral_shards.pkl")
 
-  elif (FLAGS.algorithm == "acktr"):
+  elif (FLAGS.algorithm == "a2c"):
 
     num_timesteps = int(40e6)
 
@@ -153,7 +154,8 @@ def main():
       total_timesteps=num_timesteps,
       nprocs=FLAGS.num_cpu,
       ent_coef=0.5,
-      callback=acktr_callback)
+      nsteps=FLAGS.nsteps,
+      callback=a2c_callback)
 
 
 from pysc2.env import environment
@@ -253,7 +255,7 @@ def deepq_callback(locals, globals):
       last_filename = filename
 
 
-def acktr_callback(locals, globals):
+def a2c_callback(locals, globals):
   global max_mean_reward, last_filename
   #pprint.pprint(locals)
 
@@ -262,13 +264,13 @@ def acktr_callback(locals, globals):
     print("mean_100ep_reward : %s max_mean_reward : %s" %
           (locals['mean_100ep_reward'], max_mean_reward))
 
-    if (not os.path.exists(os.path.join(PROJ_DIR, 'models/acktr/'))):
+    if (not os.path.exists(os.path.join(PROJ_DIR, 'models/a2c/'))):
       try:
         os.mkdir(os.path.join(PROJ_DIR, 'models/'))
       except Exception as e:
         print(str(e))
       try:
-        os.mkdir(os.path.join(PROJ_DIR, 'models/acktr/'))
+        os.mkdir(os.path.join(PROJ_DIR, 'models/a2c/'))
       except Exception as e:
         print(str(e))
 
@@ -280,7 +282,7 @@ def acktr_callback(locals, globals):
     model = locals['model']
 
     filename = os.path.join(
-      PROJ_DIR, 'models/acktr/mineral_%s.pkl' % locals['mean_100ep_reward'])
+      PROJ_DIR, 'models/a2c/mineral_%s.pkl' % locals['mean_100ep_reward'])
     model.save(filename)
     print("save best mean_100ep_reward model to %s" % filename)
     last_filename = filename

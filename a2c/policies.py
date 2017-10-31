@@ -35,18 +35,17 @@ class CnnPolicy(object):
         pi = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
         #pi = tf.nn.l2_normalize(pi_, 1)
 
+        vf_ = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # ?, 1
+        vf = tf.clip_by_value(vf_, -10, 10)
+
       with tf.variable_scope("sub3", reuse=reuse):
         pi_sub3 = fc(pi, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
-        #pi_sub3 = tf.nn.l2_normalize(pi_sub3_, 1)
       with tf.variable_scope("sub4", reuse=reuse):
         pi_sub4 = fc(pi, 'pi_sub4', nsub4, act=lambda x:x) # ( nenv * nsteps, 5) # ?, 5
-        #pi_sub4 = tf.nn.l2_normalize(pi_sub4_, 1)
       with tf.variable_scope("sub5", reuse=reuse):
         pi_sub5 = fc(pi, 'pi_sub5', nsub5, act=lambda x:x) # ( nenv * nsteps, 10) # ?, 10
-        #pi_sub5 = tf.nn.l2_normalize(pi_sub5_, 1)
       with tf.variable_scope("sub6", reuse=reuse):
         pi_sub6 = fc(pi, 'pi_sub6', nsub6, act=lambda x:x) # ( nenv * nsteps, 4) # ?, 4
-        #pi_sub6 = tf.nn.l2_normalize(pi_sub6_, 1)
       # with tf.variable_scope("sub7", reuse=reuse):
       #   pi_sub7_ = fc(pi, 'pi_sub7', nsub7, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
       #   pi_sub7 = tf.nn.l2_normalize(pi_sub7_, 1)
@@ -66,8 +65,7 @@ class CnnPolicy(object):
       #   pi_sub12_ = fc(pi, 'pi_sub12', nsub12, act=lambda x:x) # ( nenv * nsteps, 500) # ?, 500
       #   pi_sub12 = tf.nn.l2_normalize(pi_sub12_, 1)
 
-      vf_ = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # ?, 1
-      vf = tf.nn.l2_normalize(vf_, 1)
+      # vf = tf.nn.l2_normalize(vf_, 1)
 
       with tf.variable_scope("xy0", reuse=reuse):
         # 1 x 1 convolution for dimensionality reduction
