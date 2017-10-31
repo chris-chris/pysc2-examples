@@ -40,6 +40,7 @@ _SELECT_ALL = [0]
 class CollectMineralShards(base_agent.BaseAgent):
   """An agent specifically for solving the CollectMineralShards map."""
   def __init__(self, env):
+    super(CollectMineralShards, self).__init__()
     player = []
     self.env = env
     self.group_id = 0

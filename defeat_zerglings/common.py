@@ -60,8 +60,6 @@ def init(env, obs):
   group_list = []
   unit_xy_list = []
   for i in range(len(player_x)):
-    if i % 2 != 0:
-      continue
 
     if group_id > 9:
       break
@@ -229,8 +227,6 @@ def group_init_queue(player_relative):
   group_list = []
   unit_xy_list = []
   for i in range(len(player_x)):
-    if i % 2 != 0:
-      continue
 
     if group_id > 9:
       break

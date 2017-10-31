@@ -25,7 +25,9 @@ def main():
       visualize=True,
       save_replay_episodes=10,
       replay_dir='replay',
-      game_steps_per_episode=steps * step_mul
+      game_steps_per_episode=steps * step_mul,
+      screen_size_px=(32,32),
+      minimap_size_px=(32,32)
   ) as env:
 
     demo_replay = []
