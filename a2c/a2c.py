@@ -65,7 +65,47 @@ class Model(object):
 
     # Policy 1 : Base Action : train_model.pi label = A
 
-    logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+
+    neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
+    logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy0, labels=XY0)
+
+    pg_loss = tf.reduce_mean(ADV * neglogpac)
+    pg_loss_xy0 = tf.reduce_mean(ADV * logpac_xy0)
+    # pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
+
+    vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
+    entropy = tf.reduce_mean(cat_entropy(train_model.pi))
+    entropy_xy0 = tf.reduce_mean(cat_entropy(train_model.pi_xy0))
+
+    loss = pg_loss - entropy*ent_coef + vf_loss * vf_coef
+
+    params = find_trainable_variables("model")
+    grads = tf.gradients(loss, params)
+    if max_grad_norm is not None:
+      grads, _ = tf.clip_by_global_norm(grads, max_grad_norm)
+    grads = list(zip(grads, params))
+    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    _train = trainer.apply_gradients(grads)
+
+    self.logits = logits = train_model.pi
+
+
+    # x0
+
+    self.params_common = params_common = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/common')
+    self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0') + params_common
+
+    train_loss_xy0 = pg_loss_xy0 + vf_coef * vf_loss
+
+    self.grads_check_xy0 = grads_xy0 = tf.gradients(train_loss_xy0, params_xy0)
+    if max_grad_norm is not None:
+      grads_xy0, _ = tf.clip_by_global_norm(grads_xy0, max_grad_norm)
+
+    grads_xy0 = list(zip(grads_xy0, params_xy0))
+    trainer_xy0 = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    _train_xy0 = trainer_xy0.apply_gradients(grads_xy0)
+
+    # logpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
 
     # logpac_sub3 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub3, labels=SUB3)
     # logpac_sub4 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub4, labels=SUB4)
@@ -78,17 +118,16 @@ class Model(object):
     # logpac_sub11 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub11, labels=SUB11)
     # logpac_sub12 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_sub12, labels=SUB12)
 
-    logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy0, labels=XY0)
     # logpac_y0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y0, labels=Y0)
     # logpac_x1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x1, labels=X1)
     # logpac_y1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y1, labels=Y1)
     # logpac_x2 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_x2, labels=X2)
     # logpac_y2 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_y2, labels=Y2)
 
-    self.logits = logits = train_model.pi
+
 
     ##training loss
-    pg_loss = tf.reduce_mean(ADV*logpac)
+    # pg_loss = tf.reduce_mean(ADV*logpac)
 
     # pg_loss_sub3 = tf.reduce_mean(ADV*logpac_sub3) * tf.reduce_mean(ADV)
     # pg_loss_sub4 = tf.reduce_mean(ADV*logpac_sub4) * tf.reduce_mean(ADV)
@@ -101,14 +140,13 @@ class Model(object):
     # pg_loss_sub11 = tf.reduce_mean(ADV*logpac_sub11) * tf.reduce_mean(ADV)
     # pg_loss_sub12 = tf.reduce_mean(ADV*logpac_sub12) * tf.reduce_mean(ADV)
 
-    pg_loss_xy0 = tf.reduce_mean(ADV*logpac_xy0) * tf.reduce_mean(ADV)
     # pg_loss_y0 = tf.reduce_mean(ADV*logpac_y0) * tf.reduce_mean(ADV)
     # pg_loss_x1 = tf.reduce_mean(ADV*logpac_x1) * tf.reduce_mean(ADV)
     # pg_loss_y1 = tf.reduce_mean(ADV*logpac_y1) * tf.reduce_mean(ADV)
     # pg_loss_x2 = tf.reduce_mean(ADV*logpac_x2) * tf.reduce_mean(ADV)
     # pg_loss_y2 = tf.reduce_mean(ADV*logpac_y2) * tf.reduce_mean(ADV)
 
-    entropy = tf.reduce_mean(cat_entropy(train_model.pi))
+    # entropy = tf.reduce_mean(cat_entropy(train_model.pi))
 
     # entropy_sub3 = tf.reduce_mean(cat_entropy(train_model.pi_sub3))
     # entropy_sub4 = tf.reduce_mean(cat_entropy(train_model.pi_sub4))
@@ -121,14 +159,13 @@ class Model(object):
     # entropy_sub11 = tf.reduce_mean(cat_entropy(train_model.pi_sub11))
     # entropy_sub12 = tf.reduce_mean(cat_entropy(train_model.pi_sub12))
 
-    entropy_xy0 = tf.reduce_mean(cat_entropy(train_model.pi_xy0))
     # entropy_y0 = tf.reduce_mean(cat_entropy(train_model.pi_y0))
     # entropy_x1 = tf.reduce_mean(cat_entropy(train_model.pi_x1))
     # entropy_y1 = tf.reduce_mean(cat_entropy(train_model.pi_y1))
     # entropy_x2 = tf.reduce_mean(cat_entropy(train_model.pi_x2))
     # entropy_y2 = tf.reduce_mean(cat_entropy(train_model.pi_y2))
 
-    pg_loss = pg_loss - ent_coef * entropy
+    # pg_loss = pg_loss - ent_coef * entropy
 
     # pg_loss_sub3 = pg_loss_sub3 - ent_coef * entropy_sub3
     # pg_loss_sub4 = pg_loss_sub4 - ent_coef * entropy_sub4
@@ -141,29 +178,27 @@ class Model(object):
     # pg_loss_sub11 = pg_loss_sub11 - ent_coef * entropy_sub11
     # pg_loss_sub12 = pg_loss_sub12 - ent_coef * entropy_sub12
 
-    pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
     # pg_loss_y0 = pg_loss_y0 - ent_coef * entropy_y0
     # pg_loss_x1 = pg_loss_x1 - ent_coef * entropy_x1
     # pg_loss_y1 = pg_loss_y1 - ent_coef * entropy_y1
     # pg_loss_x2 = pg_loss_x2 - ent_coef * entropy_x2
     # pg_loss_y2 = pg_loss_y2 - ent_coef * entropy_y2
 
-    vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
+    # vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
 
-    self.params = params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model')
+    # self.params = params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model')
 
-    self.params_common = params_common = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/common')
 
-    self.params_pi1 = params_pi1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/pi1') + params_common
+    # self.params_pi1 = params_pi1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/pi1') + params_common
 
     # Base Action
 
-    train_loss = pg_loss + vf_coef * vf_loss
+    # train_loss = pg_loss + vf_coef * vf_loss
 
-    self.grads_check = grads = tf.gradients(train_loss, params_pi1)
-    grads = list(zip(grads, params_pi1))
-    trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
-    _train = trainer.apply_gradients(grads)
+    #self.grads_check = grads = tf.gradients(train_loss, params_pi1)
+    #grads = list(zip(grads, params_pi1))
+    #trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    #_train = trainer.apply_gradients(grads)
 
 
     # # sub3
@@ -302,18 +337,18 @@ class Model(object):
     # grads_sub12 = list(zip(grads_sub12, params_sub12))
     # trainer = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
     # _train_sub12 = trainer.apply_gradients(grads_sub12)
-
-    # x0
-
-    self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0') + params_common
-
-    train_loss_xy0 = pg_loss_xy0 + vf_coef * vf_loss
-
-    self.grads_check_xy0 = grads_xy0 = tf.gradients(train_loss_xy0, params_xy0)
-
-    grads_xy0 = list(zip(grads_xy0, params_xy0))
-    trainer_xy0 = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
-    _train_xy0 = trainer_xy0.apply_gradients(grads_xy0)
+    #
+    # # x0
+    #
+    # self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0') + params_common
+    #
+    # train_loss_xy0 = pg_loss_xy0 + vf_coef * vf_loss
+    #
+    # self.grads_check_xy0 = grads_xy0 = tf.gradients(train_loss_xy0, params_xy0)
+    #
+    # grads_xy0 = list(zip(grads_xy0, params_xy0))
+    # trainer_xy0 = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    # _train_xy0 = trainer_xy0.apply_gradients(grads_xy0)
 
     #
     # # y0
@@ -399,7 +434,7 @@ class Model(object):
          pg_loss_xy0, entropy_xy0, _train_xy0],
         td_map
       )
-      print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " entropy : ", entropy)
+      print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " policy_entropy : ", policy_entropy)
       # print("policy_loss_sub3 : ", policy_loss_sub3, " policy_entropy_sub3 : ", policy_entropy_sub3)
       # print("policy_loss_sub4 : ", policy_loss_sub4, " policy_entropy_sub4 : ", policy_entropy_sub4)
       # print("policy_loss_sub5 : ", policy_loss_sub5, " policy_entropy_sub5 : ", policy_entropy_sub5)
