@@ -111,8 +111,6 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
       my_dest = dest_per_marine["1"]
       other_dest = dest_per_marine["0"]
 
-  if(group_id==0):
-    group_id = 1
 
   if(len(player_x)>0) :
 
@@ -201,6 +199,12 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
   #
   #   group_id = random.randint(0,len(group_list)-1)
   #   actions.append({"base_action":group_id})
+
+  if(group_id==0):
+    group_id = 1
+  else:
+    group_id = 0
+
   return actions, group_id, dest_per_marine
 
 def group_init_queue(player_relative):
