@@ -19,9 +19,19 @@ def worker(remote, map_name, i):
       minimap_size_px=(32,32)
   ) as env:
     available_actions = None
+    result = None
+    group_list = []
     while True:
       cmd, data = remote.recv()
       if cmd == 'step':
+        # if(common.check_group_list(env, result)):
+        #   result, xy_per_marine = common.init(env,result)
+
+        if(len(group_list) == 0 or common.check_group_list(env, result)):
+          print("init group list")
+          result, xy_per_marine = common.init(env, result)
+          group_list = common.update_group_list(result)
+
         action1 = data[0][0]
         action2 = data[0][1]
         func = actions.FUNCTIONS[action1[0]]
@@ -56,7 +66,12 @@ def worker(remote, map_name, i):
         info = result[0].observation["available_actions"]
         if done:
           result = env.reset()
-          result, xy_per_marine = common.init(env, result)
+
+          if(len(group_list) == 0 or common.check_group_list(env, result)):
+            print("init group list")
+            result, xy_per_marine = common.init(env, result)
+            group_list = common.update_group_list(result)
+
           # ob = result[0].observation["screen"]
           # reward = result[0].reward
           # done = result[0].step_type == environment.StepType.LAST
@@ -64,7 +79,12 @@ def worker(remote, map_name, i):
         remote.send((ob, reward, done, info, army_count, control_groups, selected, xy_per_marine))
       elif cmd == 'reset':
         result = env.reset()
-        result, xy_per_marine = common.init(env, result)
+
+        if(len(group_list) == 0 or common.check_group_list(env, result)):
+          print("init group list")
+          result, xy_per_marine = common.init(env, result)
+          group_list = common.update_group_list(result)
+
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))

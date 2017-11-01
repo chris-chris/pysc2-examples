@@ -37,12 +37,17 @@ def init(env, obs):
 
   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
 
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-  
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+  # obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
+
   # if(army_count==0):
   #   return obs
   # try:
