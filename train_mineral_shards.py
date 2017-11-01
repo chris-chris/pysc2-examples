@@ -40,7 +40,8 @@ flags.DEFINE_float("exploration_fraction", 0.5, "Exploration Fraction")
 flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
 flags.DEFINE_boolean("dueling", True, "dueling")
 flags.DEFINE_float("lr", 0.0005, "Learning rate")
-flags.DEFINE_integer("num_cpu", 4, "number of cpus")
+flags.DEFINE_integer("num_agents", 4, "number of RL agents for A2C")
+flags.DEFINE_integer("num_scripts", 4, "number of script agents for A2C")
 flags.DEFINE_integer("nsteps", 20, "number of batch steps for A2C")
 
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -59,7 +60,7 @@ def main():
   print("exploration_fraction : %s" % FLAGS.exploration_fraction)
   print("prioritized : %s" % FLAGS.prioritized)
   print("dueling : %s" % FLAGS.dueling)
-  print("num_cpu : %s" % FLAGS.num_cpu)
+  print("num_agents : %s" % FLAGS.num_agents)
   print("lr : %s" % FLAGS.lr)
 
   if(FLAGS.lr == 0):
@@ -67,7 +68,7 @@ def main():
     
   print("random lr : %s" % FLAGS.lr)
 
-  lr_round = round(FLAGS.lr, 5)
+  lr_round = round(FLAGS.lr, 8)
 
   logdir = "tensorboard"
   if (FLAGS.algorithm == "deepq"):
@@ -75,12 +76,13 @@ def main():
       FLAGS.algorithm, FLAGS.timesteps, FLAGS.exploration_fraction,
       FLAGS.prioritized, FLAGS.dueling, lr_round, start_time)
   elif (FLAGS.algorithm == "a2c"):
-    logdir = "tensorboard/mineral/%s/%s_num%s_lr%s_nsteps%s/%s" % (
+    logdir = "tensorboard/mineral/%s/%s_n%s_s%s_nsteps%s/lr%s/%s" % (
       FLAGS.algorithm,
       FLAGS.timesteps,
-      FLAGS.num_cpu,
-      lr_round,
+      FLAGS.num_agents + FLAGS.num_scripts,
+      FLAGS.num_scripts,
       FLAGS.nsteps,
+      lr_round,
       start_time)
 
   if (FLAGS.log == "tensorboard"):
@@ -128,7 +130,7 @@ def main():
 
     seed = 0
 
-    env = SubprocVecEnv(FLAGS.num_cpu, FLAGS.map)
+    env = SubprocVecEnv(FLAGS.num_agents + FLAGS.num_scripts, FLAGS.map)
 
     policy_fn = CnnPolicy
     a2c.learn(
@@ -136,7 +138,8 @@ def main():
       env,
       seed,
       total_timesteps=num_timesteps,
-      nprocs=FLAGS.num_cpu,
+      nprocs=FLAGS.num_agents + FLAGS.num_scripts,
+      nscripts=FLAGS.num_scripts,
       ent_coef=0.5,
       nsteps=FLAGS.nsteps,
       callback=a2c_callback)

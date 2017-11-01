@@ -26,7 +26,7 @@ class Model(object):
   def __init__(self, policy, ob_space, ac_space,
                nenvs,total_timesteps, nprocs=32, nsteps=20,
                nstack=4, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0,
-               lr=0.25, max_grad_norm=0.5,
+               lr=0.25, max_grad_norm=0.3,
                kfac_clip=0.001, lrschedule='linear', alpha=0.99, epsilon=1e-5):
     config = tf.ConfigProto(allow_soft_placement=True,
                             intra_op_parallelism_threads=nprocs,
@@ -478,11 +478,12 @@ class Model(object):
 
 class Runner(object):
 
-  def __init__(self, env, model, nsteps, nstack, gamma, callback=None):
+  def __init__(self, env, model, nsteps, nscripts, nstack, gamma, callback=None):
     self.env = env
     self.model = model
     nh, nw, nc = (32, 32, 1)
     self.nsteps = nsteps
+    self.nscripts = nscripts
     self.nenv = nenv = env.num_envs
     self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
     self.batch_coord_shape = (nenv*nsteps, 32)
@@ -671,8 +672,9 @@ class Runner(object):
       # Scripted Agent Hacking
 
       for env_num in range(self.nenv):
-        if(env_num % 2 != 0):
+        if(env_num >= self.nscripts): # only for scripted agents
           continue
+
         ob = self.obs[env_num, :, :, :]
         # extra = ob[:,:,-1]
         # selected = ob[:, :, -2]
@@ -791,7 +793,7 @@ class Runner(object):
           num_episodes = self.episodes
           self.episode_rewards.append(self.total_reward[n])
 
-          if(n%2==0):
+          if(n < self.nscripts): # scripted agents
             self.episode_rewards_script.append(self.total_reward[n])
             mean_100ep_reward_script = round(np.mean(self.episode_rewards_script[-101:-1]), 1)
             logger.record_tabular("reward script", self.total_reward[n])
@@ -886,7 +888,7 @@ class Runner(object):
            mb_base_actions, mb_xy0, mb_values
 
 def learn(policy, env, seed, total_timesteps=int(40e6),
-          gamma=0.99, log_interval=1, nprocs=32, nsteps=20,
+          gamma=0.99, log_interval=1, nprocs=24, nscripts=12, nsteps=20,
           nstack=4, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0,
           lr=0.25, max_grad_norm=0.5,
           kfac_clip=0.001, save_interval=None, lrschedule='linear',
@@ -916,7 +918,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
       fh.write(cloudpickle.dumps(make_model))
   model = make_model()
   print("make_model complete!")
-  runner = Runner(env, model, nsteps=nsteps, nstack=nstack, gamma=gamma, callback=callback)
+  runner = Runner(env, model, nsteps=nsteps, nscripts=nscripts, nstack=nstack, gamma=gamma, callback=callback)
   nbatch = nenvs*nsteps
   tstart = time.time()
   #enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
