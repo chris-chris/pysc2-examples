@@ -18,7 +18,7 @@ def worker(remote, map_name, i):
       screen_size_px=(32,32),
       minimap_size_px=(32,32)
   ) as env:
-
+    available_actions = None
     while True:
       cmd, data = remote.recv()
       if cmd == 'step':
@@ -28,8 +28,10 @@ def worker(remote, map_name, i):
         print("agent(",i," ) action : ", action1, " func : ", func)
         func = actions.FUNCTIONS[action2[0]]
         print("agent(",i," ) action : ", action2, " func : ", func)
+
         result = env.step(actions=[action1])
-        result = env.step(actions=[action2])
+        if(331 in available_actions):
+          result = env.step(actions=[action2])
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int) #  (1, 32, 32)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))
@@ -47,6 +49,7 @@ def worker(remote, map_name, i):
         #ob = np.append(ob, extra, axis=0) # (3, 32, 32)
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
+        available_actions = result[0].observation["available_actions"]
         info = result[0].observation["available_actions"]
         if done:
           result = env.reset()
@@ -77,6 +80,7 @@ def worker(remote, map_name, i):
         reward = result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
+        available_actions = result[0].observation["available_actions"]
         remote.send((ob, reward, done, info, army_count, control_groups, selected))
       elif cmd == 'close':
         remote.close()
