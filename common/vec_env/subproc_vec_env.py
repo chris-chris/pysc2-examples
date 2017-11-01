@@ -22,9 +22,14 @@ def worker(remote, map_name, i):
     while True:
       cmd, data = remote.recv()
       if cmd == 'step':
-        func = actions.FUNCTIONS[data[0][0]]
-        print("agent(",i," ) action : ", data, " func : ", func)
-        result = env.step(actions=data)
+        action1 = data[0][0]
+        action2 = data[0][1]
+        func = actions.FUNCTIONS[action1[0]]
+        print("agent(",i," ) action : ", action1, " func : ", func)
+        func = actions.FUNCTIONS[action2[0]]
+        print("agent(",i," ) action : ", action2, " func : ", func)
+        result = env.step(actions=[action1])
+        result = env.step(actions=[action2])
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int) #  (1, 32, 32)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))

@@ -111,9 +111,10 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
       my_dest = dest_per_marine["1"]
       other_dest = dest_per_marine["0"]
 
-  r = random.randint(0,1)
+  if(group_id==0):
+    group_id = 1
 
-  if(len(player_x)>0) and r == 0 :
+  if(len(player_x)>0) :
 
     player = [int(player_x.mean()), int(player_y.mean())]
     points = [player]
@@ -194,12 +195,12 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
     #dest_per_marine {'0': [56, 26], '1': [52, 6]}
 
     if(closest):
-      actions.append({"base_action":2,
+      actions.append({"base_action":group_id,
                       "x0": closest[0], "y0": closest[1]})
-  elif(len(group_list)>0):
-
-    group_id = random.randint(0,len(group_list)-1)
-    actions.append({"base_action":group_id})
+  # elif(len(group_list)>0):
+  #
+  #   group_id = random.randint(0,len(group_list)-1)
+  #   actions.append({"base_action":group_id})
   return actions, group_id, dest_per_marine
 
 def group_init_queue(player_relative):

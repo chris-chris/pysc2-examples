@@ -18,6 +18,7 @@ from pysc2.lib import actions as sc2_actions
 from defeat_zerglings import common
 
 _CONTROL_GROUP_RECALL = 0
+_NOT_QUEUED = 0
 
 # np.set_printoptions(threshold=np.inf)
 
@@ -70,7 +71,7 @@ class Model(object):
     logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy0, labels=XY0)
 
     pg_loss = tf.reduce_mean(ADV * neglogpac)
-    logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
+    # logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
     pg_loss_xy0 = tf.reduce_mean(ADV * logpac_xy0)
     # pg_loss_xy0 = pg_loss_xy0 * tf.cast(tf.equal(A, 2), tf.float32)
     # pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
@@ -491,7 +492,7 @@ class Runner(object):
     self.batch_coord_shape = (nenv*nsteps, 32)
     self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.uint8)
     self.available_actions = None
-    self.base_act_mask = np.full((self.nenv, 3), 0, dtype=np.uint8)
+    self.base_act_mask = np.full((self.nenv, 2), 0, dtype=np.uint8)
     obs, rewards, dones, available_actions, army_counts, control_groups, selected = env.reset()
     self.army_counts = army_counts
     self.control_groups = control_groups
@@ -525,7 +526,7 @@ class Runner(object):
     #print("update_available : ", _available_actions)
     self.available_actions = _available_actions
     # avail = np.array([[0,1,2,3,4,7], [0,1,2,3,4,7]])
-    self.base_act_mask = np.full((self.nenv, 3), 0, dtype=np.uint8)
+    self.base_act_mask = np.full((self.nenv, 2), 0, dtype=np.uint8)
     for env_num, list in enumerate(_available_actions):
       # print("env_num :", env_num, " list :", list)
       for action_num in list:
@@ -533,8 +534,8 @@ class Runner(object):
         if(action_num == 4):
           self.base_act_mask[env_num][0] = 1
           self.base_act_mask[env_num][1] = 1
-        elif(action_num == 331):
-          self.base_act_mask[env_num][2] = 1
+        # elif(action_num == 331):
+        #   self.base_act_mask[env_num][2] = 1
 
 
   def valid_base_action(self, base_actions):
@@ -544,8 +545,8 @@ class Runner(object):
         if(action_num == 4):
           avail.append(0)
           avail.append(1)
-        elif(action_num == 331):
-          avail.append(2)
+        # elif(action_num == 331):
+        #   avail.append(2)
 
       if base_actions[env_num] not in avail:
         print("env_num", env_num, " argmax is not valid. random pick ", avail)
@@ -557,11 +558,11 @@ class Runner(object):
     new_base_actions = np.copy(base_actions)
     for env_num, ba in enumerate(new_base_actions):
       if(ba==0):
-        new_base_actions[env_num] = 4 # select marine control group 0
+        new_base_actions[env_num] = 4 # move marine control group 0
       elif(ba==1):
-        new_base_actions[env_num] = 4 # select marine control group 1
-      elif(ba==2):
-        new_base_actions[env_num] = 331 # move marine xy0
+        new_base_actions[env_num] = 4 # move marine control group 1
+      # elif(ba==2):
+      #   new_base_actions[env_num] = 331 # move marine xy0
 
     return new_base_actions
 
@@ -589,47 +590,48 @@ class Runner(object):
     for env_num, spec in enumerate(base_action_spec):
       #print("spec", spec.args)
       args = []
-      for arg_idx, arg in enumerate(spec.args):
-        #print("arg", arg)
-        #print("arg.id", arg.id)
-        if(arg.id==0): # screen (32,32) x0, y0
-          args.append([int(x0[env_num]), int(y0[env_num])])
-        # elif(arg.id==1): # minimap (32,32) x1, y1
-        #   args.append([int(x1[env_num]), int(y1[env_num])])
-        # elif(arg.id==2): # screen2 (32,32) x2, y2
-        #   args.append([int(x2[env_num]), y2[env_num]])
-        elif(arg.id==3): # pi3 queued (2)
-          args.append([int(0)])
-        elif(arg.id==4): # pi4 control_group_act (5)
-          args.append([_CONTROL_GROUP_RECALL])
-        elif(arg.id==5): # pi5 control_group_id 10
-          args.append([int(base_actions[env_num])]) # 0 => cg 0 / 1 => cg 1
-        # elif(arg.id==6): # pi6 select_point_act 4
-        #   args.append([int(sub6[env_num])])
-        # elif(arg.id==7): # pi7 select_add 2
-        #   args.append([int(sub7[env_num])])
-        # elif(arg.id==8): # pi8 select_unit_act 4
-        #   args.append([int(sub8[env_num])])
-        # elif(arg.id==9): # pi9 select_unit_id 500
-        #   args.append([int(sub9[env_num])])
-        # elif(arg.id==10): # pi10 select_worker 4
-        #   args.append([int(sub10[env_num])])
-        # elif(arg.id==11): # pi11 build_queue_id 10
-        #   args.append([int(sub11[env_num])])
-        # elif(arg.id==12): # pi12 unload_id 500
-        #   args.append([int(sub12[env_num])])
-        else:
-          raise NotImplementedError("cannot construct this arg", spec.args)
-
+      # for arg_idx, arg in enumerate(spec.args):
+      #   #print("arg", arg)
+      #   #print("arg.id", arg.id)
+      #   if(arg.id==0): # screen (32,32) x0, y0
+      #     args.append([int(x0[env_num]), int(y0[env_num])])
+      #   # elif(arg.id==1): # minimap (32,32) x1, y1
+      #   #   args.append([int(x1[env_num]), int(y1[env_num])])
+      #   # elif(arg.id==2): # screen2 (32,32) x2, y2
+      #   #   args.append([int(x2[env_num]), y2[env_num]])
+      #   elif(arg.id==3): # pi3 queued (2)
+      #     args.append([int(0)])
+      #   elif(arg.id==4): # pi4 control_group_act (5)
+      #     args.append([_CONTROL_GROUP_RECALL])
+      #   elif(arg.id==5): # pi5 control_group_id 10
+      #     args.append([int(base_actions[env_num])]) # 0 => cg 0 / 1 => cg 1
+      #   # elif(arg.id==6): # pi6 select_point_act 4
+      #   #   args.append([int(sub6[env_num])])
+      #   # elif(arg.id==7): # pi7 select_add 2
+      #   #   args.append([int(sub7[env_num])])
+      #   # elif(arg.id==8): # pi8 select_unit_act 4
+      #   #   args.append([int(sub8[env_num])])
+      #   # elif(arg.id==9): # pi9 select_unit_id 500
+      #   #   args.append([int(sub9[env_num])])
+      #   # elif(arg.id==10): # pi10 select_worker 4
+      #   #   args.append([int(sub10[env_num])])
+      #   # elif(arg.id==11): # pi11 build_queue_id 10
+      #   #   args.append([int(sub11[env_num])])
+      #   # elif(arg.id==12): # pi12 unload_id 500
+      #   #   args.append([int(sub12[env_num])])
+      #   else:
+      #     raise NotImplementedError("cannot construct this arg", spec.args)
+      two_action = []
       if(base_actions[env_num]==0):
-        a = 4
-      elif(base_actions[env_num]==1):
-        a = 4
-      else:
-        a = 331
+        two_action.append(sc2_actions.FunctionCall(4, [[_CONTROL_GROUP_RECALL], [0]]))
+        two_action.append(sc2_actions.FunctionCall(331, [[_NOT_QUEUED], [int(x0[env_num]), y0[env_num]]]))
 
-      action = sc2_actions.FunctionCall(a, args)
-      actions.append(action)
+      elif(base_actions[env_num]==1):
+        two_action.append(sc2_actions.FunctionCall(4, [[_CONTROL_GROUP_RECALL], [1]]))
+        two_action.append(sc2_actions.FunctionCall(331, [[_NOT_QUEUED], [int(x0[env_num]), y0[env_num]]]))
+
+      #action = sc2_actions.FunctionCall(a, args)
+      actions.append(two_action)
 
     return actions
 
@@ -696,48 +698,17 @@ class Runner(object):
                              self.group_list[env_num], self.group_id[env_num], self.dest_per_marine[env_num])
 
         base_actions[env_num] = 0
-        # sub3_actions[env_num] = 0
-        # sub4_actions[env_num] = 0
-        # sub5_actions[env_num] = 0
-        # sub6_actions[env_num] = 0
-        # sub7_actions[env_num] = 0
-        # sub8_actions[env_num] = 0
-        # sub9_actions[env_num] = 0
-        # sub10_actions[env_num] = 0
-        # sub11_actions[env_num] = 0
-        # sub12_actions[env_num] = 0
         x0[env_num] = 0
         y0[env_num] = 0
-        # x1[env_num] = 0
-        # y1[env_num] = 0
-        # x2[env_num] = 0
-        # y2[env_num] = 0
+
         if(len(self.action_queue[env_num]) > 0):
           action = self.action_queue[env_num].pop(0)
           print("action :", action)
           base_actions[env_num] = action.get("base_action",0)
-          # if(base_actions[env_num] == 4):
-          #   base_actions[env_num] = 1
-          # elif(base_actions[env_num] == 331):
-          #   base_actions[env_num] = 2
 
-          # sub3_actions[env_num] = action.get("sub3",0)
-          # sub4_actions[env_num] = action.get("sub4",0)
-          # sub5_actions[env_num] = action.get("sub5",0)
-          # sub6_actions[env_num] = action.get("sub6",0)
-          # sub7_actions[env_num] = action.get("sub7",0)
-          # sub8_actions[env_num] = action.get("sub8",0)
-          # sub9_actions[env_num] = action.get("sub9",0)
-          # sub10_actions[env_num] = action.get("sub10",0)
-          # sub11_actions[env_num] = action.get("sub11",0)
-          # sub12_actions[env_num] = action.get("sub12",0)
-          x0[env_num] = action.get("x0",0)
-          y0[env_num] = action.get("y0",0)
+          x0[env_num] = action.get("x0", 0)
+          y0[env_num] = action.get("y0", 0)
           xy0[env_num] = y0[env_num] * 32 + x0[env_num]
-          # x1[env_num] = action.get("x1",0)
-          # y1[env_num] = action.get("y1",0)
-          # x2[env_num] = action.get("x2",0)
-          # y2[env_num] = action.get("y2",0)
 
       base_actions = self.valid_base_action(base_actions)
       print("valid_base_actions : ", base_actions)

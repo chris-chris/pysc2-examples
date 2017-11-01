@@ -11,7 +11,7 @@ class CnnPolicy(object):
     nbatch = nenv*nsteps
     nh, nw, nc = (32,32,1)
     ob_shape = (nbatch, nh, nw, nc * nstack)
-    nact = 3 # 524
+    nact = 2 # 524
     # nsub3 = 2
     # nsub4 = 5
     # nsub5 = 10
@@ -38,8 +38,8 @@ class CnnPolicy(object):
         pi_ = fc(h4, 'pi', nact, act=lambda x:x) # ( nenv * nsteps, 524) # ?, 524
         pi = tf.nn.softmax(pi_)
 
-        vf_ = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # ?, 1
-        vf = tf.clip_by_value(vf_, -10, 10)
+        vf = fc(h4, 'v', 1, act=lambda x:x) # ( nenv * nsteps, 1) # ?, 1
+        #vf = tf.clip_by_value(vf_, -2, 2)
 
       # with tf.variable_scope("sub3", reuse=reuse):
       #   pi_sub3 = fc(h4, 'pi_sub3', nsub3, act=lambda x:x) # ( nenv * nsteps, 2) # ?, 2
