@@ -27,10 +27,13 @@ def worker(remote, map_name, i):
         func = actions.FUNCTIONS[action1[0]]
         print("agent(",i," ) action : ", action1, " func : ", func)
         func = actions.FUNCTIONS[action2[0]]
-        print("agent(",i," ) action : ", action2, " func : ", func)
-
+        print("agent(",i," ) action : ", action2, " func : ", func, "xy :", action2[1][1])
+        x, y = action2[1][1]
+        move = True
+        if(x==0 and y==0):
+          move = False
         result = env.step(actions=[action1])
-        if(331 in available_actions):
+        if(331 in available_actions and move):
           result = env.step(actions=[action2])
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int) #  (1, 32, 32)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
@@ -53,15 +56,15 @@ def worker(remote, map_name, i):
         info = result[0].observation["available_actions"]
         if done:
           result = env.reset()
-          common.init(env, result)
+          result, xy_per_marine = common.init(env, result)
           # ob = result[0].observation["screen"]
           # reward = result[0].reward
           # done = result[0].step_type == environment.StepType.LAST
           info = result[0].observation["available_actions"]
-        remote.send((ob, reward, done, info, army_count, control_groups, selected))
+        remote.send((ob, reward, done, info, army_count, control_groups, selected, xy_per_marine))
       elif cmd == 'reset':
         result = env.reset()
-        common.init(env, result)
+        result, xy_per_marine = common.init(env, result)
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))
@@ -81,7 +84,7 @@ def worker(remote, map_name, i):
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
         available_actions = result[0].observation["available_actions"]
-        remote.send((ob, reward, done, info, army_count, control_groups, selected))
+        remote.send((ob, reward, done, info, army_count, control_groups, selected, xy_per_marine))
       elif cmd == 'close':
         remote.close()
         break
@@ -120,15 +123,15 @@ class SubprocVecEnv(VecEnv):
     for remote, action in zip(self.remotes, actions):
       remote.send(('step', [action]))
     results = [remote.recv() for remote in self.remotes]
-    obs, rews, dones, infos, army_counts, control_groups, selected = zip(*results)
-    return np.stack(obs), np.stack(rews), np.stack(dones), infos, army_counts, control_groups, np.stack(selected)
+    obs, rews, dones, infos, army_counts, control_groups, selected, xy_per_marine = zip(*results)
+    return np.stack(obs), np.stack(rews), np.stack(dones), infos, army_counts, control_groups, np.stack(selected), xy_per_marine
 
   def reset(self):
     for remote in self.remotes:
       remote.send(('reset', None))
     results = [remote.recv() for remote in self.remotes]
-    obs, rews, dones, infos, army_counts, control_groups, selected = zip(*results)
-    return np.stack(obs), np.stack(rews), np.stack(dones), infos, army_counts, control_groups, np.stack(selected)
+    obs, rews, dones, infos, army_counts, control_groups, selected, xy_per_marine = zip(*results)
+    return np.stack(obs), np.stack(rews), np.stack(dones), infos, army_counts, control_groups, np.stack(selected), xy_per_marine
 
   def action_spec(self, base_actions):
     for remote, base_action in zip(self.remotes, base_actions):

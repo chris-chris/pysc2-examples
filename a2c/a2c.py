@@ -493,7 +493,10 @@ class Runner(object):
     self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.uint8)
     self.available_actions = None
     self.base_act_mask = np.full((self.nenv, 2), 0, dtype=np.uint8)
-    obs, rewards, dones, available_actions, army_counts, control_groups, selected = env.reset()
+    obs, rewards, dones, available_actions, army_counts, control_groups, selected, xy_per_marine = env.reset()
+    self.xy_per_marine = [{} for _ in range(nenv)]
+    for env_num, data in enumerate(xy_per_marine):
+      self.xy_per_marine[env_num] = data
     self.army_counts = army_counts
     self.control_groups = control_groups
     self.selected = selected
@@ -514,7 +517,8 @@ class Runner(object):
     self.group_list = [[] for _ in range(nenv)]
     self.agent_state = ["IDLE" for _ in range(nenv)]
     self.dest_per_marine = [{} for _ in range(nenv)]
-    self.group_id = [1 for _ in range(nenv)]
+    
+    self.group_id = [0 for _ in range(nenv)]
 
   def update_obs(self, obs): # (self.nenv, 32, 32, 2)
     obs = np.asarray(obs, dtype=np.int32).swapaxes(1, 2).swapaxes(2, 3)
@@ -693,9 +697,13 @@ class Runner(object):
 
         if(len(self.action_queue[env_num]) == 0):
 
-          self.action_queue[env_num], self.group_id[env_num], self.dest_per_marine[env_num] =\
-            common.solve_tsp(player_relative, self.selected[env_num][0],
-                             self.group_list[env_num], self.group_id[env_num], self.dest_per_marine[env_num])
+          self.action_queue[env_num], self.group_id[env_num], self.dest_per_marine[env_num], self.xy_per_marine[env_num] =\
+            common.solve_tsp(player_relative,
+                             self.selected[env_num][0],
+                             self.group_list[env_num],
+                             self.group_id[env_num],
+                             self.dest_per_marine[env_num],
+                             self.xy_per_marine[env_num])
 
         base_actions[env_num] = 0
         x0[env_num] = 0
@@ -750,10 +758,12 @@ class Runner(object):
       mb_dones.append(self.dones)
 
       #print("final acitons : ", actions)
-      obs, rewards, dones, available_actions, army_counts, control_groups, selected = self.env.step(actions=actions)
+      obs, rewards, dones, available_actions, army_counts, control_groups, selected, xy_per_marine = self.env.step(actions=actions)
       self.army_counts = army_counts
       self.control_groups = control_groups
       self.selected = selected
+      for env_num, data in enumerate(xy_per_marine):
+        self.xy_per_marine[env_num] = data
       self.update_available(available_actions)
 
       self.states = states

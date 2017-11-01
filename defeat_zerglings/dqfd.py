@@ -254,7 +254,7 @@ def learn(env,
 
   screen = player_relative
 
-  obs = common.init(env, obs)
+  obs, xy_per_marine = common.init(env, obs)
 
   group_id = 0
   reset = True

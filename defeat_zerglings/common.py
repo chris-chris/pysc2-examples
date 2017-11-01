@@ -59,6 +59,8 @@ def init(env, obs):
   group_id = 0
   group_list = []
   unit_xy_list = []
+  last_xy = [0,0]
+  xy_per_marine = {}
   for i in range(len(player_x)):
 
     if group_id > 9:
@@ -73,9 +75,11 @@ def init(env, obs):
           obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[0], xy])])
         else:
           obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[1], xy])])
+        last_xy = xy
 
       obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_CONTROL_GROUP, [[_CONTROL_GROUP_SET], [group_id]])])
       unit_xy_list = []
+      xy_per_marine[str(group_id)] = last_xy
 
       group_list.append(group_id)
       group_id += 1
@@ -86,15 +90,17 @@ def init(env, obs):
         obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[0], xy])])
       else:
         obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_POINT, [[1], xy])])
+      last_xy = xy
 
     obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_CONTROL_GROUP, [[_CONTROL_GROUP_SET], [group_id]])])
+    xy_per_marine[str(group_id)] = last_xy
 
     group_list.append(group_id)
     group_id += 1
 
-  return obs
+  return obs, xy_per_marine
 
-def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
+def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine, xy_per_marine):
   my_dest = None
   other_dest = None
   closest, min_dist = None, None
@@ -113,8 +119,12 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
 
 
   if(len(player_x)>0) :
+    if(group_id==0):
+      xy_per_marine["1"] = [int(player_x.mean()), int(player_y.mean())]
+    else:
+      xy_per_marine["0"] = [int(player_x.mean()), int(player_y.mean())]
 
-    player = [int(player_x.mean()), int(player_y.mean())]
+    player = xy_per_marine[str(group_id)]
     points = [player]
 
     for p in zip(neutral_x, neutral_y):
@@ -125,7 +135,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
           # print("continue since partner will take care of it ", p)
           continue
 
-      pp = [p[0]//2*2, p[1]//2*2]
+      pp = [p[0], p[1]]
       if(pp not in points):
         points.append(pp)
 
@@ -137,7 +147,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
     solve_tsp = False
     if(my_dest):
       dist = np.linalg.norm(np.array(player) - np.array(my_dest))
-      if(dist < 2):
+      if(dist < 0.5):
         solve_tsp = True
 
     if(my_dest is None):
@@ -195,6 +205,9 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
     if(closest):
       actions.append({"base_action":group_id,
                       "x0": closest[0], "y0": closest[1]})
+    elif(my_dest):
+      actions.append({"base_action":group_id,
+                      "x0": my_dest[0], "y0": my_dest[1]})
   # elif(len(group_list)>0):
   #
   #   group_id = random.randint(0,len(group_list)-1)
@@ -205,7 +218,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine):
   else:
     group_id = 0
 
-  return actions, group_id, dest_per_marine
+  return actions, group_id, dest_per_marine, xy_per_marine
 
 def group_init_queue(player_relative):
 
@@ -358,7 +371,7 @@ def select_marine(env, obs):
   group_list = update_group_list(obs)
 
   if(check_group_list(env, obs)):
-    obs = init(env, obs)
+    obs, xy_per_marine = init(env, obs)
     group_list = update_group_list(obs)
 
   # if(len(group_list) == 0):
