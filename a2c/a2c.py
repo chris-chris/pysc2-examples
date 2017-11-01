@@ -70,8 +70,9 @@ class Model(object):
     logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy0, labels=XY0)
 
     pg_loss = tf.reduce_mean(ADV * neglogpac)
+    logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
     pg_loss_xy0 = tf.reduce_mean(ADV * logpac_xy0)
-    pg_loss_xy0 = pg_loss_xy0 * tf.cast(tf.equal(A, 2), tf.float32)
+    # pg_loss_xy0 = pg_loss_xy0 * tf.cast(tf.equal(A, 2), tf.float32)
     # pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
 
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
