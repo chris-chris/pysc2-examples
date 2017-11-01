@@ -26,7 +26,7 @@ class Model(object):
   def __init__(self, policy, ob_space, ac_space,
                nenvs,total_timesteps, nprocs=32, nsteps=20,
                nstack=4, ent_coef=0.1, vf_coef=0.5, vf_fisher_coef=1.0,
-               lr=0.25, max_grad_norm=0.1,
+               lr=0.25, max_grad_norm=0.02,
                kfac_clip=0.001, lrschedule='linear', alpha=0.99, epsilon=1e-5):
     config = tf.ConfigProto(allow_soft_placement=True,
                             intra_op_parallelism_threads=nprocs,
@@ -71,6 +71,7 @@ class Model(object):
 
     pg_loss = tf.reduce_mean(ADV * neglogpac)
     pg_loss_xy0 = tf.reduce_mean(ADV * logpac_xy0)
+    pg_loss_xy0 = pg_loss_xy0 * tf.cast(tf.equal(A, 2), tf.float32)
     # pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
 
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
