@@ -25,7 +25,7 @@ _NOT_QUEUED = 0
 class Model(object):
 
   def __init__(self, policy, ob_space, ac_space,
-               nenvs,total_timesteps, nprocs=32, nsteps=20,
+               nenvs,total_timesteps, nprocs=32, nscripts=16, nsteps=20,
                nstack=4, ent_coef=0.1, vf_coef=0.5, vf_fisher_coef=1.0,
                lr=0.25, max_grad_norm=0.001,
                kfac_clip=0.001, lrschedule='linear', alpha=0.99, epsilon=1e-5):
@@ -38,23 +38,8 @@ class Model(object):
     nbatch = nenvs * nsteps
     A = tf.placeholder(tf.int32, [nbatch])
 
-    # SUB3 = tf.placeholder(tf.int32, [nbatch])
-    # SUB4 = tf.placeholder(tf.int32, [nbatch])
-    # SUB5 = tf.placeholder(tf.int32, [nbatch])
-    # SUB6 = tf.placeholder(tf.int32, [nbatch])
-    # SUB7 = tf.placeholder(tf.int32, [nbatch])
-    # SUB8 = tf.placeholder(tf.int32, [nbatch])
-    # SUB9 = tf.placeholder(tf.int32, [nbatch])
-    # SUB10 = tf.placeholder(tf.int32, [nbatch])
-    # SUB11 = tf.placeholder(tf.int32, [nbatch])
-    # SUB12 = tf.placeholder(tf.int32, [nbatch])
-
     XY0 = tf.placeholder(tf.int32, [nbatch])
-    # Y0 = tf.placeholder(tf.int32, [nbatch])
     XY1 = tf.placeholder(tf.int32, [nbatch])
-    # Y1 = tf.placeholder(tf.int32, [nbatch])
-    # X2 = tf.placeholder(tf.int32, [nbatch])
-    # Y2 = tf.placeholder(tf.int32, [nbatch])
 
     ADV = tf.placeholder(tf.float32, [nbatch])
     R = tf.placeholder(tf.float32, [nbatch])
@@ -79,12 +64,19 @@ class Model(object):
     # pg_loss_xy0 = pg_loss_xy0 * tf.cast(tf.equal(A, 2), tf.float32)
     # pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
 
-    vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
+    vf_ = tf.squeeze(train_model.vf)
+    vf_mask = tf.concat([tf.zeros([nscripts * nsteps, 1]),tf.ones([(nprocs - nscripts) * nsteps, 1])],axis=0)
+    vf_r = tf.concat([tf.ones([nscripts * nsteps, 1]),tf.zeros([(nprocs - nscripts) * nsteps, 1])],axis=0) * R
+    vf_masked = vf_ * vf_mask + vf_r
+
+    #vf_mask[0:nscripts * nsteps] = R[0:nscripts * nsteps]
+
+    vf_loss = tf.reduce_mean(mse(vf_masked, R))
     entropy = tf.reduce_mean(cat_entropy(train_model.pi))
     entropy_xy0 = tf.reduce_mean(cat_entropy(train_model.pi_xy0))
     entropy_xy1 = tf.reduce_mean(cat_entropy(train_model.pi_xy1))
 
-    loss = pg_loss - entropy*ent_coef + vf_loss * vf_coef
+    loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
 
     params = find_trainable_variables("model")
     grads = tf.gradients(loss, params)
@@ -601,6 +593,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
   make_model = lambda : Model(policy, ob_space, ac_space, nenvs,
                               total_timesteps,
                               nprocs=nprocs,
+                              nscripts=nscripts,
                               nsteps=nsteps,
                               nstack=nstack,
                               ent_coef=ent_coef,
