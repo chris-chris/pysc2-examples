@@ -35,9 +35,9 @@ def worker(remote, map_name, i):
         action1 = data[0][0]
         action2 = data[0][1]
         func = actions.FUNCTIONS[action1[0]]
-        print("agent(",i," ) action : ", action1, " func : ", func)
+        #print("agent(",i," ) action : ", action1, " func : ", func)
         func = actions.FUNCTIONS[action2[0]]
-        print("agent(",i," ) action : ", action2, " func : ", func, "xy :", action2[1][1])
+        #print("agent(",i," ) action : ", action2, " func : ", func, "xy :", action2[1][1])
         x, y = action2[1][1]
         move = True
         if(x==0 and y==0):

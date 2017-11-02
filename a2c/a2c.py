@@ -349,8 +349,8 @@ class Runner(object):
       pi1_noise = np.random.random_sample((self.nenv,2)) * 0.3
       # avail = self.env.available_actions()
       # print("pi1 : ", pi1)
-      print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
-      print("pi1 * self.base_act_mask + pi1_noise : ", pi1 * self.base_act_mask + pi1_noise)
+      # print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
+      # print("pi1 * self.base_act_mask + pi1_noise : ", pi1 * self.base_act_mask + pi1_noise)
 
       base_actions = np.argmax(pi1 * self.base_act_mask + pi1_noise, axis=1)
       xy0 = np.argmax(pi_xy0, axis=1)
@@ -415,7 +415,7 @@ class Runner(object):
 
         if(len(self.action_queue[env_num]) > 0):
           action = self.action_queue[env_num].pop(0)
-          print("action :", action)
+          # print("action :", action)
           base_actions[env_num] = action.get("base_action",0)
 
           x0[env_num] = action.get("x0", 0)
@@ -427,9 +427,9 @@ class Runner(object):
           xy1[env_num] = y1[env_num] * 32 + x1[env_num]
 
       base_actions = self.valid_base_action(base_actions)
-      print("valid_base_actions : ", base_actions)
+      # print("valid_base_actions : ", base_actions)
       new_base_actions = self.trans_base_actions(base_actions)
-      print("new_base_actions : ", new_base_actions)
+      # print("new_base_actions : ", new_base_actions)
 
       base_action_spec = self.env.action_spec(new_base_actions)
 
