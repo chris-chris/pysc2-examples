@@ -48,8 +48,11 @@ def worker(remote, map_name, i):
         reward += result[0].reward
         done = result[0].step_type == environment.StepType.LAST
         if(331 in available_actions and move and not done):
-          result = env.step(actions=[action2])
-          reward += result[0].reward
+          try:
+            result = env.step(actions=[action2])
+            reward += result[0].reward
+          except Exception as e:
+            print("e :", e)
 
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int) #  (1, 32, 32)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
