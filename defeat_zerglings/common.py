@@ -214,11 +214,21 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine, 
     #dest_per_marine {'0': [56, 26], '1': [52, 6]}
 
     if(closest):
-      actions.append({"base_action":group_id,
-                      "x0": closest[0], "y0": closest[1]})
+      if(group_id == 0):
+        actions.append({"base_action":group_id,
+                        "x0": closest[0], "y0": closest[1]})
+      else:
+        actions.append({"base_action":group_id,
+                        "x1": closest[0], "y1": closest[1]})
+
     elif(my_dest):
-      actions.append({"base_action":group_id,
-                      "x0": my_dest[0], "y0": my_dest[1]})
+      if(group_id == 0):
+        actions.append({"base_action":group_id,
+                        "x0": my_dest[0], "y0": my_dest[1]})
+      else:
+        actions.append({"base_action":group_id,
+                        "x1": my_dest[0], "y1": my_dest[1]})
+
   # elif(len(group_list)>0):
   #
   #   group_id = random.randint(0,len(group_list)-1)

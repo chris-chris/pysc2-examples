@@ -85,12 +85,10 @@ class CnnPolicy(object):
         # pi_y0 = xy0[:,0,:,0] # ?, 32
         # y0 = sample(pi_y0) # ?,
 
-      # with tf.variable_scope("xy1", reuse=reuse):
-      #   xy1 = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 32, 32, 1)
-      #   pi_x1 = xy1[:,:,0,0] # ?, 32
-      #   x1 = sample(pi_x1) # ?,
-      #   pi_y1 = xy1[:,0,:,0] # ?, 32
-      #   y1 = sample(pi_y1) # ?,
+      with tf.variable_scope("xy1", reuse=reuse):
+        pi_xy1_ = conv(h2, 'xy1', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 32, 32, 1)
+        pi_xy1__ = conv_to_fc(pi_xy1_) # 32 x 32 => 1024
+        pi_xy1 = tf.nn.softmax(pi_xy1__)
       #
       # with tf.variable_scope("xy2", reuse=reuse):
       #   xy2 = conv(h2, 'xy2', nf=1, rf=1, stride=1, init_scale=np.sqrt(2)) # (? nenv * nsteps, 32, 32, 1)
@@ -105,8 +103,8 @@ class CnnPolicy(object):
 
     def step(ob, *_args, **_kwargs):
       #obs, states, rewards, masks, actions, actions2, x1, y1, x2, y2, values
-      _pi1, _xy0, _v = sess.run([pi,pi_xy0, v0], {X:ob})
-      return _pi1, _xy0, _v, [] #dummy state
+      _pi1, _xy0, _xy1, _v = sess.run([pi,pi_xy0, pi_xy1, v0], {X:ob})
+      return _pi1, _xy0, _xy1, _v, [] #dummy state
 
     def value(ob, *_args, **_kwargs):
       return sess.run(v0, {X:ob})
@@ -124,6 +122,7 @@ class CnnPolicy(object):
     # self.pi_sub11 = pi_sub11
     # self.pi_sub12 = pi_sub12
     self.pi_xy0 = pi_xy0
+    self.pi_xy1 = pi_xy1
     # self.pi_y0 = pi_y0
     # self.pi_x1 = pi_x1
     # self.pi_y1 = pi_y1

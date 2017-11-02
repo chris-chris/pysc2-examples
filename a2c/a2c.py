@@ -51,7 +51,7 @@ class Model(object):
 
     XY0 = tf.placeholder(tf.int32, [nbatch])
     # Y0 = tf.placeholder(tf.int32, [nbatch])
-    # X1 = tf.placeholder(tf.int32, [nbatch])
+    XY1 = tf.placeholder(tf.int32, [nbatch])
     # Y1 = tf.placeholder(tf.int32, [nbatch])
     # X2 = tf.placeholder(tf.int32, [nbatch])
     # Y2 = tf.placeholder(tf.int32, [nbatch])
@@ -70,15 +70,19 @@ class Model(object):
     neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
     logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy0, labels=XY0)
 
+    logpac_xy1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy1, labels=XY1)
+
     pg_loss = tf.reduce_mean(ADV * neglogpac)
     # logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
     pg_loss_xy0 = tf.reduce_mean(ADV * logpac_xy0)
+    pg_loss_xy1 = tf.reduce_mean(ADV * logpac_xy1)
     # pg_loss_xy0 = pg_loss_xy0 * tf.cast(tf.equal(A, 2), tf.float32)
     # pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
 
     vf_loss = tf.reduce_mean(mse(tf.squeeze(train_model.vf), R))
     entropy = tf.reduce_mean(cat_entropy(train_model.pi))
     entropy_xy0 = tf.reduce_mean(cat_entropy(train_model.pi_xy0))
+    entropy_xy1 = tf.reduce_mean(cat_entropy(train_model.pi_xy1))
 
     loss = pg_loss - entropy*ent_coef + vf_loss * vf_coef
 
@@ -93,7 +97,7 @@ class Model(object):
     self.logits = logits = train_model.pi
 
 
-    # x0
+    # xy0
 
     self.params_common = params_common = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/common')
     self.params_xy0 = params_xy0 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy0') + params_common
@@ -109,32 +113,51 @@ class Model(object):
     _train_xy0 = trainer_xy0.apply_gradients(grads_xy0)
 
 
+    # xy1
+
+    self.params_xy1 = params_xy1 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='model/xy1') + params_common
+
+    train_loss_xy1 = pg_loss_xy1 + vf_coef * vf_loss
+
+    self.grads_check_xy1 = grads_xy1 = tf.gradients(train_loss_xy1, params_xy1)
+    if max_grad_norm is not None:
+      grads_xy1, _ = tf.clip_by_global_norm(grads_xy1, max_grad_norm)
+
+    grads_xy1 = list(zip(grads_xy1, params_xy1))
+    trainer_xy1 = tf.train.RMSPropOptimizer(learning_rate=lr, decay=alpha, epsilon=epsilon)
+    _train_xy1 = trainer_xy1.apply_gradients(grads_xy1)
+
+
     self.lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
     def train(obs, states, rewards, masks, actions,
-              xy0, values):
+              xy0, xy1, values):
       advs = rewards - values
       for step in range(len(obs)):
         cur_lr = self.lr.value()
 
       td_map = {train_model.X:obs, A:actions,
-                XY0:xy0, ADV:advs, R:rewards, PG_LR:cur_lr}
+                XY0:xy0, XY1:xy1, ADV:advs, R:rewards, PG_LR:cur_lr}
       if states != []:
         td_map[train_model.S] = states
         td_map[train_model.M] = masks
 
       policy_loss, value_loss, policy_entropy, _, \
-      policy_loss_xy0, policy_entropy_xy0, _ = sess.run(
+      policy_loss_xy0, policy_entropy_xy0, _, \
+      policy_loss_xy1, policy_entropy_xy1, _ = sess.run(
         [pg_loss, vf_loss, entropy, _train,
-         pg_loss_xy0, entropy_xy0, _train_xy0],
+         pg_loss_xy0, entropy_xy0, _train_xy0,
+         pg_loss_xy1, entropy_xy1, _train_xy1],
         td_map
       )
       print("policy_loss : ", policy_loss, " value_loss : ", value_loss, " policy_entropy : ", policy_entropy)
 
       print("policy_loss_xy0 : ", policy_loss_xy0, " policy_entropy_xy0 : ", policy_entropy_xy0)
+      print("policy_loss_xy1 : ", policy_loss_xy1, " policy_entropy_xy1 : ", policy_entropy_xy1)
 
       return policy_loss, value_loss, policy_entropy, \
-          policy_loss_xy0, policy_entropy_xy0
+             policy_loss_xy0, policy_entropy_xy0, \
+             policy_loss_xy1, policy_entropy_xy1
 
     def save(save_path):
       ps = sess.run(params)
@@ -269,7 +292,7 @@ class Runner(object):
   #   return sub1_act_mask, sub2_act_mask, sub3_act_mask
 
   def construct_action(self, base_actions, base_action_spec,
-                       x0, y0):
+                       x0, y0, x1, y1):
     actions = []
     for env_num, spec in enumerate(base_action_spec):
       #print("spec", spec.args)
@@ -312,7 +335,7 @@ class Runner(object):
 
       elif(base_actions[env_num]==1):
         two_action.append(sc2_actions.FunctionCall(4, [[_CONTROL_GROUP_RECALL], [1]]))
-        two_action.append(sc2_actions.FunctionCall(331, [[_NOT_QUEUED], [int(x0[env_num]), y0[env_num]]]))
+        two_action.append(sc2_actions.FunctionCall(331, [[_NOT_QUEUED], [int(x1[env_num]), y1[env_num]]]))
 
       #action = sc2_actions.FunctionCall(a, args)
       actions.append(two_action)
@@ -321,24 +344,31 @@ class Runner(object):
 
   def run(self):
     mb_obs, mb_rewards, mb_base_actions, \
-    mb_xy0, \
+    mb_xy0, mb_xy1, \
     mb_values, mb_dones \
-      = [],[],[],[],[],[]
+      = [],[],[],[],[],[], []
       # ,[],[],[],[],[],[],[],[],[],[],[]
 
     mb_states = self.states
     for n in range(self.nsteps):
       # pi, pi2, x1, y1, x2, y2, v0
-      pi1, pi_xy0, values, states = self.model.step(self.obs, self.states, self.dones)
+      pi1, pi_xy0, pi_xy1, values, states = self.model.step(self.obs, self.states, self.dones)
 
+      pi1_noise = np.random.random_sample((self.nenv,2)) * 0.3
       # avail = self.env.available_actions()
       # print("pi1 : ", pi1)
       print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
-      base_actions = np.argmax(pi1 * self.base_act_mask, axis=1)
+      print("pi1 * self.base_act_mask + pi1_noise : ", pi1 * self.base_act_mask + pi1_noise)
+
+      base_actions = np.argmax(pi1 * self.base_act_mask + pi1_noise, axis=1)
       xy0 = np.argmax(pi_xy0, axis=1)
 
       x0 = (xy0 % 32).astype(int)
       y0 = (xy0 / 32).astype(int)
+
+      xy1 = np.argmax(pi_xy1, axis=1)
+      x1 = (xy1 % 32).astype(int)
+      y1 = (xy1 / 32).astype(int)
 
       # pi (2?, 524) * (2?, 524) masking
       # print("base_actions : ", base_actions)
@@ -388,6 +418,8 @@ class Runner(object):
         base_actions[env_num] = 0
         x0[env_num] = 0
         y0[env_num] = 0
+        x1[env_num] = 0
+        y1[env_num] = 0
 
         if(len(self.action_queue[env_num]) > 0):
           action = self.action_queue[env_num].pop(0)
@@ -397,6 +429,10 @@ class Runner(object):
           x0[env_num] = action.get("x0", 0)
           y0[env_num] = action.get("y0", 0)
           xy0[env_num] = y0[env_num] * 32 + x0[env_num]
+
+          x1[env_num] = action.get("x1", 0)
+          y1[env_num] = action.get("y1", 0)
+          xy1[env_num] = y1[env_num] * 32 + x1[env_num]
 
       base_actions = self.valid_base_action(base_actions)
       print("valid_base_actions : ", base_actions)
@@ -411,8 +447,8 @@ class Runner(object):
                                       # sub7_actions, sub8_actions,
                                       # sub9_actions, sub10_actions,
                                       # sub11_actions, sub12_actions,
-                                      x0, y0
-                                      #, x1, y1, x2, y2
+                                      x0, y0, x1, y1
+                                      # , x2, y2
                                       )
 
       mb_obs.append(np.copy(self.obs))
@@ -430,7 +466,7 @@ class Runner(object):
 
       mb_xy0.append(xy0)
       # mb_y0.append(y0)
-      # mb_x1.append(x1)
+      mb_xy1.append(xy1)
       # mb_y1.append(y1)
       # mb_x2.append(x2)
       # mb_y2.append(y2)
@@ -507,7 +543,7 @@ class Runner(object):
 
     mb_xy0 = np.asarray(mb_xy0, dtype=np.int32).swapaxes(1, 0)
     # mb_y0 = np.asarray(mb_y0, dtype=np.int32).swapaxes(1, 0)
-    # mb_x1 = np.asarray(mb_x1, dtype=np.int32).swapaxes(1, 0)
+    mb_xy1 = np.asarray(mb_xy1, dtype=np.int32).swapaxes(1, 0)
     # mb_y1 = np.asarray(mb_y1, dtype=np.int32).swapaxes(1, 0)
     # mb_x2 = np.asarray(mb_x2, dtype=np.int32).swapaxes(1, 0)
     # mb_y2 = np.asarray(mb_y2, dtype=np.int32).swapaxes(1, 0)
@@ -540,7 +576,7 @@ class Runner(object):
     # mb_sub12_actions = mb_sub12_actions.flatten()
     mb_xy0 = mb_xy0.flatten()
     # mb_y0 = mb_y0.flatten()
-    # mb_x1 = mb_x1.flatten()
+    mb_xy1 = mb_xy1.flatten()
     # mb_y1 = mb_y1.flatten()
     # mb_x2 = mb_x2.flatten()
     # mb_y2 = mb_y2.flatten()
@@ -548,7 +584,7 @@ class Runner(object):
     mb_values = mb_values.flatten()
     mb_masks = mb_masks.flatten()
     return mb_obs, mb_states, mb_rewards, mb_masks, \
-           mb_base_actions, mb_xy0, mb_values
+           mb_base_actions, mb_xy0, mb_xy1, mb_values
 
 def learn(policy, env, seed, total_timesteps=int(40e6),
           gamma=0.99, log_interval=1, nprocs=24, nscripts=12, nsteps=20,
@@ -586,12 +622,13 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
   tstart = time.time()
   #enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
   for update in range(1, total_timesteps//nbatch+1):
-    obs, states, rewards, masks, actions, xy0, values = runner.run()
+    obs, states, rewards, masks, actions, xy0, xy1, values = runner.run()
     policy_loss, value_loss, policy_entropy, \
     policy_loss_xy0, policy_entropy_xy0, \
+    policy_loss_xy1, policy_entropy_xy1, \
       = model.train(obs, states, rewards,
                     masks, actions,
-                    xy0, values)
+                    xy0, xy1, values)
 
     model.old_obs = obs
     nseconds = time.time()-tstart
@@ -606,6 +643,8 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
 
       logger.record_tabular("policy_loss_xy0", float(policy_loss_xy0))
       logger.record_tabular("policy_entropy_xy0", float(policy_entropy_xy0))
+      logger.record_tabular("policy_loss_xy1", float(policy_loss_xy1))
+      logger.record_tabular("policy_entropy_xy1", float(policy_entropy_xy1))
       # logger.record_tabular("policy_loss_y0", float(policy_loss_y0))
       # logger.record_tabular("policy_entropy_y0", float(policy_entropy_y0))
 
