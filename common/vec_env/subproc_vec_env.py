@@ -27,6 +27,8 @@ def worker(remote, map_name, i):
         # if(common.check_group_list(env, result)):
         #   result, xy_per_marine = common.init(env,result)
 
+        reward = 0
+
         if(len(group_list) == 0 or common.check_group_list(env, result)):
           print("init group list")
           result, xy_per_marine = common.init(env, result)
@@ -43,8 +45,12 @@ def worker(remote, map_name, i):
         if(x==0 and y==0):
           move = False
         result = env.step(actions=[action1])
-        if(331 in available_actions and move):
+        reward += result[0].reward
+        done = result[0].step_type == environment.StepType.LAST
+        if(331 in available_actions and move and not done):
           result = env.step(actions=[action2])
+          reward += result[0].reward
+
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int) #  (1, 32, 32)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))
@@ -60,8 +66,7 @@ def worker(remote, map_name, i):
         #   extra[0,2, control_group_id] = count
         #ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
         #ob = np.append(ob, extra, axis=0) # (3, 32, 32)
-        reward = result[0].reward
-        done = result[0].step_type == environment.StepType.LAST
+
         available_actions = result[0].observation["available_actions"]
         info = result[0].observation["available_actions"]
         if done:
@@ -79,12 +84,14 @@ def worker(remote, map_name, i):
         remote.send((ob, reward, done, info, army_count, control_groups, selected, xy_per_marine))
       elif cmd == 'reset':
         result = env.reset()
+        reward = 0
 
         if(len(group_list) == 0 or common.check_group_list(env, result)):
           print("init group list")
           result, xy_per_marine = common.init(env, result)
           group_list = common.update_group_list(result)
 
+        reward += result[0].reward
         ob = (result[0].observation["screen"][_PLAYER_RELATIVE:_PLAYER_RELATIVE+1] == 3).astype(int)
         selected = result[0].observation["screen"][_SELECTED:_SELECTED+1] #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))
@@ -100,7 +107,7 @@ def worker(remote, map_name, i):
         #   extra[0,2, control_group_id] = count
         # ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
         # ob = np.append(ob, extra, axis=0) # (3, 32, 32)
-        reward = result[0].reward
+
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
         available_actions = result[0].observation["available_actions"]
