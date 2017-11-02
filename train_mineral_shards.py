@@ -66,7 +66,7 @@ def main():
   print("lr : %s" % FLAGS.lr)
 
   if(FLAGS.lr == 0):
-    FLAGS.lr = random.uniform(0.00001, 0.001)
+    FLAGS.lr = random.uniform(0.00001, 0.0005)
     
   print("random lr : %s" % FLAGS.lr)
 
