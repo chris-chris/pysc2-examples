@@ -199,7 +199,7 @@ def learn(env,
     optimizer=tf.train.AdamOptimizer(learning_rate=lr),
     gamma=gamma,
     grad_norm_clipping=10,
-    scope="deepq_x"
+    scope="deepq"
   )
   #
   # act_y, train_y, update_target_y, debug_y = deepq.build_train(
@@ -257,10 +257,21 @@ def learn(env,
 
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-  screen = player_relative #+ path_memory
+  screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
 
   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
   player = [int(player_x.mean()), int(player_y.mean())]
+
+  if(player[0]>16):
+    screen = shift(LEFT, player[0]-16, screen)
+  elif(player[0]<16):
+    screen = shift(RIGHT, 16 - player[0], screen)
+
+  if(player[1]>16):
+    screen = shift(UP, player[1]-16, screen)
+  elif(player[1]<16):
+    screen = shift(DOWN, 16 - player[1], screen)
+
 
   reset = True
   with tempfile.TemporaryDirectory() as td:
@@ -300,7 +311,47 @@ def learn(env,
       coord = [player[0], player[1]]
       rew = 0
 
-      coord = [action_x, action_y]
+      if(action == 0): #UP
+
+        if(player[1] >= 8):
+          coord = [player[0], player[1] - 8]
+          #path_memory_[player[1] - 16 : player[1], player[0]] = -1
+        elif(player[1] > 0):
+          coord = [player[0], 0]
+          #path_memory_[0 : player[1], player[0]] = -1
+          #else:
+          #  rew -= 1
+
+      elif(action == 1): #DOWN
+
+        if(player[1] <= 23):
+          coord = [player[0], player[1] + 8]
+          #path_memory_[player[1] : player[1] + 16, player[0]] = -1
+        elif(player[1] > 23):
+          coord = [player[0], 31]
+          #path_memory_[player[1] : 63, player[0]] = -1
+          #else:
+          #  rew -= 1
+
+      elif(action == 2): #LEFT
+
+        if(player[0] >= 8):
+          coord = [player[0] - 8, player[1]]
+          #path_memory_[player[1], player[0] - 16 : player[0]] = -1
+        elif(player[0] < 8):
+          coord = [0, player[1]]
+          #path_memory_[player[1], 0 : player[0]] = -1
+          #else:
+          #  rew -= 1
+
+      elif(action == 3): #RIGHT
+
+        if(player[0] <= 23):
+          coord = [player[0] + 8, player[1]]
+          #path_memory_[player[1], player[0] : player[0] + 16] = -1
+        elif(player[0] > 23):
+          coord = [31, player[1]]
+          #path_memory_[player[1], player[0] : 63] = -1
 
 
       if _MOVE_SCREEN not in obs[0].observation["available_actions"]:
@@ -314,10 +365,21 @@ def learn(env,
       obs = env.step(actions=new_action)
 
       player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
-      new_screen = player_relative #+ path_memory
+      new_screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
+
 
       player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
       player = [int(player_x.mean()), int(player_y.mean())]
+
+      if(player[0]>16):
+        new_screen = shift(LEFT, player[0]-16, new_screen)
+      elif(player[0]<16):
+        new_screen = shift(RIGHT, 16 - player[0], new_screen)
+
+      if(player[1]>16):
+        new_screen = shift(UP, player[1]-16, new_screen)
+      elif(player[1]<16):
+        new_screen = shift(DOWN, 16 - player[1], new_screen)
 
       rew = obs[0].reward
 
@@ -336,7 +398,7 @@ def learn(env,
         obs = env.reset()
         player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-        screen = player_relative #+ path_memory
+        screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
 
         player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
@@ -352,8 +414,8 @@ def learn(env,
         # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
         if prioritized_replay:
 
-          experience_x = replay_buffer.sample(batch_size, beta=beta_schedule.value(t))
-          (obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x, batch_idxes_x) = experience_x
+          experience = replay_buffer.sample(batch_size, beta=beta_schedule.value(t))
+          (obses_t, actions, rewards, obses_tp1, dones, weights, batch_idxes) = experience
 
           # experience_y = replay_buffer.sample(batch_size, beta=beta_schedule.value(t))
           # (obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y, batch_idxes_y) = experience_y
@@ -423,19 +485,19 @@ def shift(direction, number, matrix):
   '''
   if direction in (UP):
     matrix = np.roll(matrix, -number, axis=0)
-    matrix[number:,:] = -2
+    matrix[number:,:] = 0
     return matrix
   elif direction in (DOWN):
     matrix = np.roll(matrix, number, axis=0)
-    matrix[:number,:] = -2
+    matrix[:number,:] = 0
     return matrix
   elif direction in (LEFT):
     matrix = np.roll(matrix, -number, axis=1)
-    matrix[:,number:] = -2
+    matrix[:,number:] = 0
     return matrix
   elif direction in (RIGHT):
     matrix = np.roll(matrix, number, axis=1)
-    matrix[:,:number] = -2
+    matrix[:,:number] = 0
     return matrix
   else:
     return matrix
