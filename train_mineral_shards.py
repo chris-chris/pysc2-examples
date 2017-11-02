@@ -29,7 +29,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
-step_mul = 8
+step_mul = 1
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("map", "CollectMineralShards",
@@ -148,10 +148,10 @@ def main():
         env,
         q_func=model,
         num_actions=4,
-        lr=1e-3,
-        max_timesteps=20000000,
+        lr=FLAGS.lr,
+        max_timesteps=FLAGS.timesteps,
         buffer_size=10000,
-        exploration_fraction=0.5,
+        exploration_fraction=FLAGS.exploration_fraction,
         exploration_final_eps=0.01,
         train_freq=4,
         learning_starts=10000,
@@ -182,6 +182,7 @@ def main():
       nscripts=FLAGS.num_scripts,
       ent_coef=0.5,
       nsteps=FLAGS.nsteps,
+      max_grad_norm=0.01,
       callback=a2c_callback)
 
 
