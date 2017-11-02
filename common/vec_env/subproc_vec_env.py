@@ -51,6 +51,7 @@ def worker(remote, map_name, i):
           try:
             result = env.step(actions=[action2])
             reward += result[0].reward
+            done = result[0].step_type == environment.StepType.LAST
           except Exception as e:
             print("e :", e)
 
