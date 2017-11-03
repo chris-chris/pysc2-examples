@@ -56,7 +56,7 @@ and extract them to your `StarcraftII/Maps/` directory.
 ## 4. Train it!
 
 ```shell
-$ python train_mineral_shards.py --algorithm=acktr
+$ python train_mineral_shards.py --algorithm=a2c
 ```
 
 ## 5. Enjoy it!
@@ -89,6 +89,7 @@ $ python train_mineral_shards.py --algorithm=a2c --num_cpu=16--timesteps=2000000
 | prioritized          | Whether using prioritized replay for DQN        | False                           | boolean        |
 | dueling              | Whether using dueling network for DQN           | False                           | boolean        |
 | lr                   | learning rate (if 0 set random e-5 ~ e-3)       | 0.0005                          | float          |
-| num_cpu              | number of agents for A2C(acktr)                 | 4                               | int            |
-| nsteps               | number of agents for A2C(acktr)                 | 20                              | int            |
+| num_agents           | number of agents for A2C                        | 4                               | int            |
+| num_scripts          | number of scripted agents for A2C               | 4                               | int            |
+| nsteps               | number of steps for update policy               | 20                              | int            |
 
