@@ -223,8 +223,16 @@ class Runner(object):
     for env_num in range(self.nenv):
       for (x,y), v in np.ndenumerate(obs[env_num,:,:,0]):
         if(v == 1):
-          self.obs[env_num, x, y, -2] = 1/math.sqrt ((self.xy_per_marine[env_num]["0"][0] - x)**2 + (self.xy_per_marine[env_num]["0"][1] - y)**2) + 1
-          self.obs[env_num, x, y, -1] = 1/math.sqrt ((self.xy_per_marine[env_num]["1"][0] - x)**2 + (self.xy_per_marine[env_num]["1"][1] - y)**2) + 1
+
+          dist0 = math.sqrt ((self.xy_per_marine[env_num]["0"][0] - x)**2 + (self.xy_per_marine[env_num]["0"][1] - y)**2)
+          if(dist0 == 0):
+            dist0 = 1
+          dist1 = math.sqrt ((self.xy_per_marine[env_num]["1"][0] - x)**2 + (self.xy_per_marine[env_num]["1"][1] - y)**2)
+          if(dist1 == 0):
+            dist1 = 1
+
+          self.obs[env_num, x, y, -2] = 1/dist0 + 1
+          self.obs[env_num, x, y, -1] = 1/dist1 + 1
 
     # self.obs[:, :, :, -1:] = obs[:, :, :, :]
     # could not broadcast input array from shape (4,1,32,32) into shape (4,4,32)
