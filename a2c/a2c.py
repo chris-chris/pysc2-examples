@@ -16,6 +16,7 @@ from pysc2.env import environment
 from pysc2.lib import actions as sc2_actions
 
 from defeat_zerglings import common
+import math
 
 _CONTROL_GROUP_RECALL = 0
 _NOT_QUEUED = 0
@@ -26,7 +27,7 @@ class Model(object):
 
   def __init__(self, policy, ob_space, ac_space,
                nenvs,total_timesteps, nprocs=32, nscripts=16, nsteps=20,
-               nstack=4, ent_coef=0.1, vf_coef=0.5, vf_fisher_coef=1.0,
+               nstack=1, ent_coef=0.1, vf_coef=0.5, vf_fisher_coef=1.0,
                lr=0.25, max_grad_norm=0.001,
                kfac_clip=0.001, lrschedule='linear', alpha=0.99, epsilon=1e-5):
     config = tf.ConfigProto(allow_soft_placement=True,
@@ -179,15 +180,15 @@ class Runner(object):
   def __init__(self, env, model, nsteps, nscripts, nstack, gamma, callback=None):
     self.env = env
     self.model = model
-    nh, nw, nc = (32, 32, 1)
+    nh, nw, nc = (32, 32, 2)
     self.nsteps = nsteps
     self.nscripts = nscripts
     self.nenv = nenv = env.num_envs
     self.batch_ob_shape = (nenv*nsteps, nh, nw, nc*nstack)
     self.batch_coord_shape = (nenv*nsteps, 32)
-    self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.uint8)
+    self.obs = np.zeros((nenv, nh, nw, nc*nstack), dtype=np.float32)
     self.available_actions = None
-    self.base_act_mask = np.full((self.nenv, 2), 0, dtype=np.uint8)
+    self.base_act_mask = np.full((self.nenv, 2), 0, dtype=np.float32)
     obs, rewards, dones, available_actions, army_counts, control_groups, selected, xy_per_marine = env.reset()
     self.xy_per_marine = [{} for _ in range(nenv)]
     for env_num, data in enumerate(xy_per_marine):
@@ -217,8 +218,15 @@ class Runner(object):
 
   def update_obs(self, obs): # (self.nenv, 32, 32, 2)
     obs = np.asarray(obs, dtype=np.int32).swapaxes(1, 2).swapaxes(2, 3)
-    self.obs = np.roll(self.obs, shift=-1, axis=3)
-    self.obs[:, :, :, -1:] = obs[:, :, :, :]
+    self.obs = np.roll(self.obs, shift=-2, axis=3)
+    self.obs[:, :, :, -2:] = 0
+    for env_num in range(self.nenv):
+      for (x,y), v in np.ndenumerate(obs[env_num,:,:,0]):
+        if(v == 1):
+          self.obs[env_num, x, y, -2] = 1/math.sqrt ((self.xy_per_marine[env_num]["0"][0] - x)**2 + (self.xy_per_marine[env_num]["0"][1] - y)**2) + 1
+          self.obs[env_num, x, y, -1] = 1/math.sqrt ((self.xy_per_marine[env_num]["1"][0] - x)**2 + (self.xy_per_marine[env_num]["1"][1] - y)**2) + 1
+
+    # self.obs[:, :, :, -1:] = obs[:, :, :, :]
     # could not broadcast input array from shape (4,1,32,32) into shape (4,4,32)
 
   def update_available(self, _available_actions):
@@ -580,7 +588,7 @@ class Runner(object):
 
 def learn(policy, env, seed, total_timesteps=int(40e6),
           gamma=0.99, log_interval=1, nprocs=24, nscripts=12, nsteps=20,
-          nstack=4, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0,
+          nstack=1, ent_coef=0.01, vf_coef=0.5, vf_fisher_coef=1.0,
           lr=0.25, max_grad_norm=0.01,
           kfac_clip=0.001, save_interval=None, lrschedule='linear',
           callback=None):

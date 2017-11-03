@@ -116,7 +116,7 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine, 
   other_dest = None
   closest, min_dist = None, None
   actions = []
-  neutral_y, neutral_x = (player_relative == 1).nonzero()
+  neutral_y, neutral_x = (player_relative != 0).nonzero()
   player_y, player_x = (selected == 1).nonzero()
 
   #for group_id in group_list:
