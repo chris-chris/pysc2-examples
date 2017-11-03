@@ -28,6 +28,7 @@ steps = 400
 
 FLAGS = flags.FLAGS
 
+
 def main():
   FLAGS(sys.argv)
   with sc2_env.SC2Env(
@@ -39,8 +40,7 @@ def main():
     model = deepq.models.cnn_to_mlp(
       convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
       hiddens=[256],
-      dueling=True
-    )
+      dueling=True)
 
     def make_obs_ph(name):
       return U.BatchInput((64, 64), name=name)
@@ -51,7 +51,8 @@ def main():
       'num_actions': 4,
     }
 
-    act = deepq_mineral_shards.load("mineral_shards.pkl", act_params=act_params)
+    act = deepq_mineral_shards.load(
+      "mineral_shards.pkl", act_params=act_params)
 
     while True:
 
@@ -60,59 +61,66 @@ def main():
 
       done = False
 
-      step_result = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+      step_result = env.step(actions=[
+        sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
+      ])
 
       while not done:
 
-        player_relative = step_result[0].observation["screen"][_PLAYER_RELATIVE]
+        player_relative = step_result[0].observation["screen"][
+          _PLAYER_RELATIVE]
 
         obs = player_relative
 
-        player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+        player_y, player_x = (
+          player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
 
-        if(player[0]>32):
-          obs = shift(LEFT, player[0]-32, obs)
-        elif(player[0]<32):
+        if (player[0] > 32):
+          obs = shift(LEFT, player[0] - 32, obs)
+        elif (player[0] < 32):
           obs = shift(RIGHT, 32 - player[0], obs)
 
-        if(player[1]>32):
-          obs = shift(UP, player[1]-32, obs)
-        elif(player[1]<32):
+        if (player[1] > 32):
+          obs = shift(UP, player[1] - 32, obs)
+        elif (player[1] < 32):
           obs = shift(DOWN, 32 - player[1], obs)
 
         action = act(obs[None])[0]
         coord = [player[0], player[1]]
 
-        if(action == 0): #UP
+        if (action == 0):  #UP
 
-          if(player[1] >= 16):
+          if (player[1] >= 16):
             coord = [player[0], player[1] - 16]
-          elif(player[1] > 0):
+          elif (player[1] > 0):
             coord = [player[0], 0]
 
-        elif(action == 1): #DOWN
+        elif (action == 1):  #DOWN
 
-          if(player[1] <= 47):
+          if (player[1] <= 47):
             coord = [player[0], player[1] + 16]
-          elif(player[1] > 47):
+          elif (player[1] > 47):
             coord = [player[0], 63]
 
-        elif(action == 2): #LEFT
+        elif (action == 2):  #LEFT
 
-          if(player[0] >= 16):
+          if (player[0] >= 16):
             coord = [player[0] - 16, player[1]]
-          elif(player[0] < 16):
+          elif (player[0] < 16):
             coord = [0, player[1]]
 
-        elif(action == 3): #RIGHT
+        elif (action == 3):  #RIGHT
 
-          if(player[0] <= 47):
+          if (player[0] <= 47):
             coord = [player[0] + 16, player[1]]
-          elif(player[0] > 47):
+          elif (player[0] > 47):
             coord = [63, player[1]]
 
-        new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+        new_action = [
+          sc2_actions.FunctionCall(_MOVE_SCREEN,
+                                   [_NOT_QUEUED, coord])
+        ]
 
         step_result = env.step(actions=new_action)
 
@@ -122,30 +130,33 @@ def main():
         episode_rew += rew
       print("Episode reward", episode_rew)
 
+
 UP, DOWN, LEFT, RIGHT = 'up', 'down', 'left', 'right'
+
 
 def shift(direction, number, matrix):
   ''' shift given 2D matrix in-place the given number of rows or columns
-      in the specified (UP, DOWN, LEFT, RIGHT) direction and return it
-  '''
+    in the specified (UP, DOWN, LEFT, RIGHT) direction and return it
+'''
   if direction in (UP):
     matrix = np.roll(matrix, -number, axis=0)
-    matrix[number:,:] = -2
+    matrix[number:, :] = -2
     return matrix
   elif direction in (DOWN):
     matrix = np.roll(matrix, number, axis=0)
-    matrix[:number,:] = -2
+    matrix[:number, :] = -2
     return matrix
   elif direction in (LEFT):
     matrix = np.roll(matrix, -number, axis=1)
-    matrix[:,number:] = -2
+    matrix[:, number:] = -2
     return matrix
   elif direction in (RIGHT):
     matrix = np.roll(matrix, number, axis=1)
-    matrix[:,:number] = -2
+    matrix[:, :number] = -2
     return matrix
   else:
     return matrix
+
 
 if __name__ == '__main__':
   main()

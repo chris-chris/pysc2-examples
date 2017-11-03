@@ -32,6 +32,7 @@ _SELECT_ALL = [0]
 
 FLAGS = flags.FLAGS
 
+
 class ActWrapper(object):
   def __init__(self, act):
     self._act = act
@@ -67,7 +68,8 @@ class ActWrapper(object):
           for fname in files:
             file_path = os.path.join(root, fname)
             if file_path != arc_name:
-              zipf.write(file_path, os.path.relpath(file_path, td))
+              zipf.write(file_path,
+                         os.path.relpath(file_path, td))
       with open(arc_name, "rb") as f:
         model_data = f.read()
     with open(path, "wb") as f:
@@ -77,19 +79,19 @@ class ActWrapper(object):
 def load(path, act_params, num_cpu=16):
   """Load act function that was returned by learn function.
 
-  Parameters
-  ----------
-  path: str
-      path to the act function pickle
-  num_cpu: int
-      number of cpus to use for executing the policy
+Parameters
+----------
+path: str
+    path to the act function pickle
+num_cpu: int
+    number of cpus to use for executing the policy
 
-  Returns
-  -------
-  act: ActWrapper
-      function that takes a batch of observations
-      and returns actions.
-  """
+Returns
+-------
+act: ActWrapper
+    function that takes a batch of observations
+    and returns actions.
+"""
   return ActWrapper.load(path, num_cpu=num_cpu, act_params=act_params)
 
 
@@ -119,71 +121,71 @@ def learn(env,
           callback=None):
   """Train a deepq model.
 
-  Parameters
-  -------
-  env: pysc2.env.SC2Env
-      environment to train on
-  q_func: (tf.Variable, int, str, bool) -> tf.Variable
-      the model that takes the following inputs:
-          observation_in: object
-              the output of observation placeholder
-          num_actions: int
-              number of actions
-          scope: str
-          reuse: bool
-              should be passed to outer variable scope
-      and returns a tensor of shape (batch_size, num_actions) with values of every action.
-  lr: float
-      learning rate for adam optimizer
-  max_timesteps: int
-      number of env steps to optimizer for
-  buffer_size: int
-      size of the replay buffer
-  exploration_fraction: float
-      fraction of entire training period over which the exploration rate is annealed
-  exploration_final_eps: float
-      final value of random action probability
-  train_freq: int
-      update the model every `train_freq` steps.
-      set to None to disable printing
-  batch_size: int
-      size of a batched sampled from replay buffer for training
-  print_freq: int
-      how often to print out training progress
-      set to None to disable printing
-  checkpoint_freq: int
-      how often to save the model. This is so that the best version is restored
-      at the end of the training. If you do not wish to restore the best version at
-      the end of the training set this variable to None.
-  learning_starts: int
-      how many steps of the model to collect transitions for before learning starts
-  gamma: float
-      discount factor
-  target_network_update_freq: int
-      update the target network every `target_network_update_freq` steps.
-  prioritized_replay: True
-      if True prioritized replay buffer will be used.
-  prioritized_replay_alpha: float
-      alpha parameter for prioritized replay buffer
-  prioritized_replay_beta0: float
-      initial value of beta for prioritized replay buffer
-  prioritized_replay_beta_iters: int
-      number of iterations over which beta will be annealed from initial value
-      to 1.0. If set to None equals to max_timesteps.
-  prioritized_replay_eps: float
-      epsilon to add to the TD errors when updating priorities.
-  num_cpu: int
-      number of cpus to use for training
-  callback: (locals, globals) -> None
-      function called at every steps with state of the algorithm.
-      If callback returns true training stops.
+Parameters
+-------
+env: pysc2.env.SC2Env
+    environment to train on
+q_func: (tf.Variable, int, str, bool) -> tf.Variable
+    the model that takes the following inputs:
+        observation_in: object
+            the output of observation placeholder
+        num_actions: int
+            number of actions
+        scope: str
+        reuse: bool
+            should be passed to outer variable scope
+    and returns a tensor of shape (batch_size, num_actions) with values of every action.
+lr: float
+    learning rate for adam optimizer
+max_timesteps: int
+    number of env steps to optimizer for
+buffer_size: int
+    size of the replay buffer
+exploration_fraction: float
+    fraction of entire training period over which the exploration rate is annealed
+exploration_final_eps: float
+    final value of random action probability
+train_freq: int
+    update the model every `train_freq` steps.
+    set to None to disable printing
+batch_size: int
+    size of a batched sampled from replay buffer for training
+print_freq: int
+    how often to print out training progress
+    set to None to disable printing
+checkpoint_freq: int
+    how often to save the model. This is so that the best version is restored
+    at the end of the training. If you do not wish to restore the best version at
+    the end of the training set this variable to None.
+learning_starts: int
+    how many steps of the model to collect transitions for before learning starts
+gamma: float
+    discount factor
+target_network_update_freq: int
+    update the target network every `target_network_update_freq` steps.
+prioritized_replay: True
+    if True prioritized replay buffer will be used.
+prioritized_replay_alpha: float
+    alpha parameter for prioritized replay buffer
+prioritized_replay_beta0: float
+    initial value of beta for prioritized replay buffer
+prioritized_replay_beta_iters: int
+    number of iterations over which beta will be annealed from initial value
+    to 1.0. If set to None equals to max_timesteps.
+prioritized_replay_eps: float
+    epsilon to add to the TD errors when updating priorities.
+num_cpu: int
+    number of cpus to use for training
+callback: (locals, globals) -> None
+    function called at every steps with state of the algorithm.
+    If callback returns true training stops.
 
-  Returns
-  -------
-  act: ActWrapper
-      Wrapper over act function. Adds ability to save it and load it.
-      See header of baselines/deepq/categorical.py for details on the act function.
-  """
+Returns
+-------
+act: ActWrapper
+    Wrapper over act function. Adds ability to save it and load it.
+    See header of baselines/deepq/categorical.py for details on the act function.
+"""
   # Create all the functions necessary to train the model
 
   sess = U.make_session(num_cpu=num_cpu)
@@ -199,8 +201,7 @@ def learn(env,
     optimizer=tf.train.AdamOptimizer(learning_rate=lr),
     gamma=gamma,
     grad_norm_clipping=10,
-    scope="deepq"
-  )
+    scope="deepq")
   #
   # act_y, train_y, update_target_y, debug_y = deepq.build_train(
   #   make_obs_ph=make_obs_ph,
@@ -220,14 +221,16 @@ def learn(env,
 
   # Create the replay buffer
   if prioritized_replay:
-    replay_buffer = PrioritizedReplayBuffer(buffer_size, alpha=prioritized_replay_alpha)
+    replay_buffer = PrioritizedReplayBuffer(
+      buffer_size, alpha=prioritized_replay_alpha)
     # replay_buffer_y = PrioritizedReplayBuffer(buffer_size, alpha=prioritized_replay_alpha)
 
     if prioritized_replay_beta_iters is None:
       prioritized_replay_beta_iters = max_timesteps
-    beta_schedule = LinearSchedule(prioritized_replay_beta_iters,
-                                   initial_p=prioritized_replay_beta0,
-                                   final_p=1.0)
+    beta_schedule = LinearSchedule(
+      prioritized_replay_beta_iters,
+      initial_p=prioritized_replay_beta0,
+      final_p=1.0)
 
     # beta_schedule_y = LinearSchedule(prioritized_replay_beta_iters,
     #                                  initial_p=prioritized_replay_beta0,
@@ -239,9 +242,10 @@ def learn(env,
     beta_schedule = None
     # beta_schedule_y = None
   # Create the schedule for exploration starting from 1.
-  exploration = LinearSchedule(schedule_timesteps=int(exploration_fraction * max_timesteps),
-                               initial_p=1.0,
-                               final_p=exploration_final_eps)
+  exploration = LinearSchedule(
+    schedule_timesteps=int(exploration_fraction * max_timesteps),
+    initial_p=1.0,
+    final_p=exploration_final_eps)
 
   # Initialize the parameters and copy them to the target network.
   U.initialize()
@@ -253,25 +257,25 @@ def learn(env,
 
   obs = env.reset()
   # Select all marines first
-  obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+  obs = env.step(
+    actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
 
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-  screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
+  screen = (player_relative == _PLAYER_NEUTRAL).astype(int)  #+ path_memory
 
   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
   player = [int(player_x.mean()), int(player_y.mean())]
 
-  if(player[0]>16):
-    screen = shift(LEFT, player[0]-16, screen)
-  elif(player[0]<16):
+  if (player[0] > 16):
+    screen = shift(LEFT, player[0] - 16, screen)
+  elif (player[0] < 16):
     screen = shift(RIGHT, 16 - player[0], screen)
 
-  if(player[1]>16):
-    screen = shift(UP, player[1]-16, screen)
-  elif(player[1]<16):
+  if (player[1] > 16):
+    screen = shift(UP, player[1] - 16, screen)
+  elif (player[1] < 16):
     screen = shift(DOWN, 16 - player[1], screen)
-
 
   reset = True
   with tempfile.TemporaryDirectory() as td:
@@ -297,12 +301,16 @@ def learn(env,
           # policy is comparable to eps-greedy exploration with eps = exploration.value(t).
           # See Appendix C.1 in Parameter Space Noise for Exploration, Plappert et al., 2017
           # for detailed explanation.
-          update_param_noise_threshold = -np.log(1. - exploration.value(t) + exploration.value(t) / float(num_actions))
+          update_param_noise_threshold = -np.log(
+            1. - exploration.value(t) +
+            exploration.value(t) / float(num_actions))
         kwargs['reset'] = reset
-        kwargs['update_param_noise_threshold'] = update_param_noise_threshold
+        kwargs[
+          'update_param_noise_threshold'] = update_param_noise_threshold
         kwargs['update_param_noise_scale'] = True
 
-      action = act(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
+      action = act(
+        np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
 
       # action_y = act_y(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
 
@@ -311,53 +319,56 @@ def learn(env,
       coord = [player[0], player[1]]
       rew = 0
 
-      if(action == 0): #UP
+      if (action == 0):  #UP
 
-        if(player[1] >= 8):
+        if (player[1] >= 8):
           coord = [player[0], player[1] - 8]
           #path_memory_[player[1] - 16 : player[1], player[0]] = -1
-        elif(player[1] > 0):
+        elif (player[1] > 0):
           coord = [player[0], 0]
           #path_memory_[0 : player[1], player[0]] = -1
           #else:
           #  rew -= 1
 
-      elif(action == 1): #DOWN
+      elif (action == 1):  #DOWN
 
-        if(player[1] <= 23):
+        if (player[1] <= 23):
           coord = [player[0], player[1] + 8]
           #path_memory_[player[1] : player[1] + 16, player[0]] = -1
-        elif(player[1] > 23):
+        elif (player[1] > 23):
           coord = [player[0], 31]
           #path_memory_[player[1] : 63, player[0]] = -1
           #else:
           #  rew -= 1
 
-      elif(action == 2): #LEFT
+      elif (action == 2):  #LEFT
 
-        if(player[0] >= 8):
+        if (player[0] >= 8):
           coord = [player[0] - 8, player[1]]
           #path_memory_[player[1], player[0] - 16 : player[0]] = -1
-        elif(player[0] < 8):
+        elif (player[0] < 8):
           coord = [0, player[1]]
           #path_memory_[player[1], 0 : player[0]] = -1
           #else:
           #  rew -= 1
 
-      elif(action == 3): #RIGHT
+      elif (action == 3):  #RIGHT
 
-        if(player[0] <= 23):
+        if (player[0] <= 23):
           coord = [player[0] + 8, player[1]]
           #path_memory_[player[1], player[0] : player[0] + 16] = -1
-        elif(player[0] > 23):
+        elif (player[0] > 23):
           coord = [31, player[1]]
           #path_memory_[player[1], player[0] : 63] = -1
 
-
       if _MOVE_SCREEN not in obs[0].observation["available_actions"]:
-        obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+        obs = env.step(actions=[
+          sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
+        ])
 
-      new_action = [sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])]
+      new_action = [
+        sc2_actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, coord])
+      ]
 
       # else:
       #   new_action = [sc2_actions.FunctionCall(_NO_OP, [])]
@@ -365,20 +376,21 @@ def learn(env,
       obs = env.step(actions=new_action)
 
       player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
-      new_screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
+      new_screen = (player_relative == _PLAYER_NEUTRAL).astype(
+        int)  #+ path_memory
 
-
-      player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+      player_y, player_x = (
+        player_relative == _PLAYER_FRIENDLY).nonzero()
       player = [int(player_x.mean()), int(player_y.mean())]
 
-      if(player[0]>16):
-        new_screen = shift(LEFT, player[0]-16, new_screen)
-      elif(player[0]<16):
+      if (player[0] > 16):
+        new_screen = shift(LEFT, player[0] - 16, new_screen)
+      elif (player[0] < 16):
         new_screen = shift(RIGHT, 16 - player[0], new_screen)
 
-      if(player[1]>16):
-        new_screen = shift(UP, player[1]-16, new_screen)
-      elif(player[1]<16):
+      if (player[1] > 16):
+        new_screen = shift(UP, player[1] - 16, new_screen)
+      elif (player[1] < 16):
         new_screen = shift(DOWN, 16 - player[1], new_screen)
 
       rew = obs[0].reward
@@ -396,15 +408,20 @@ def learn(env,
 
       if done:
         obs = env.reset()
-        player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+        player_relative = obs[0].observation["screen"][
+          _PLAYER_RELATIVE]
 
-        screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
+        screen = (player_relative == _PLAYER_NEUTRAL).astype(
+          int)  #+ path_memory
 
-        player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+        player_y, player_x = (
+          player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
 
         # Select all marines first
-        env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
+        env.step(actions=[
+          sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
+        ])
         episode_rewards.append(0.0)
         #episode_minerals.append(0.0)
 
@@ -414,30 +431,33 @@ def learn(env,
         # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
         if prioritized_replay:
 
-          experience = replay_buffer.sample(batch_size, beta=beta_schedule.value(t))
-          (obses_t, actions, rewards, obses_tp1, dones, weights, batch_idxes) = experience
+          experience = replay_buffer.sample(
+            batch_size, beta=beta_schedule.value(t))
+          (obses_t, actions, rewards, obses_tp1, dones, weights,
+           batch_idxes) = experience
 
           # experience_y = replay_buffer.sample(batch_size, beta=beta_schedule.value(t))
           # (obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y, batch_idxes_y) = experience_y
         else:
 
-          obses_t, actions, rewards, obses_tp1, dones = replay_buffer.sample(batch_size)
+          obses_t, actions, rewards, obses_tp1, dones = replay_buffer.sample(
+            batch_size)
           weights, batch_idxes = np.ones_like(rewards), None
 
           # obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y = replay_buffer_y.sample(batch_size)
           # weights_y, batch_idxes_y = np.ones_like(rewards_y), None
 
-        td_errors = train(obses_t, actions, rewards, obses_tp1, dones, weights)
+        td_errors = train(obses_t, actions, rewards, obses_tp1, dones,
+                          weights)
 
         # td_errors_y = train_x(obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y)
-
 
         if prioritized_replay:
           new_priorities = np.abs(td_errors) + prioritized_replay_eps
           # new_priorities = np.abs(td_errors) + prioritized_replay_eps
-          replay_buffer.update_priorities(batch_idxes, new_priorities)
+          replay_buffer.update_priorities(batch_idxes,
+                                          new_priorities)
           # replay_buffer.update_priorities(batch_idxes, new_priorities)
-
 
       if t > learning_starts and t % target_network_update_freq == 0:
         # Update target network periodically.
@@ -446,58 +466,66 @@ def learn(env,
 
       mean_100ep_reward = round(np.mean(episode_rewards[-101:-1]), 1)
       num_episodes = len(episode_rewards)
-      if done and print_freq is not None and len(episode_rewards) % print_freq == 0:
+      if done and print_freq is not None and len(
+          episode_rewards) % print_freq == 0:
         logger.record_tabular("steps", t)
         logger.record_tabular("episodes", num_episodes)
         logger.record_tabular("reward", reward)
-        logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
-        logger.record_tabular("% time spent exploring", int(100 * exploration.value(t)))
+        logger.record_tabular("mean 100 episode reward",
+                              mean_100ep_reward)
+        logger.record_tabular("% time spent exploring",
+                              int(100 * exploration.value(t)))
         logger.dump_tabular()
 
-      if (checkpoint_freq is not None and t > learning_starts and
-              num_episodes > 100 and t % checkpoint_freq == 0):
+      if (checkpoint_freq is not None and t > learning_starts
+          and num_episodes > 100 and t % checkpoint_freq == 0):
         if saved_mean_reward is None or mean_100ep_reward > saved_mean_reward:
           if print_freq is not None:
-            logger.log("Saving model due to mean reward increase: {} -> {}".format(
-              saved_mean_reward, mean_100ep_reward))
+            logger.log(
+              "Saving model due to mean reward increase: {} -> {}".
+                format(saved_mean_reward, mean_100ep_reward))
           U.save_state(model_file)
           model_saved = True
           saved_mean_reward = mean_100ep_reward
     if model_saved:
       if print_freq is not None:
-        logger.log("Restored model with mean reward: {}".format(saved_mean_reward))
+        logger.log("Restored model with mean reward: {}".format(
+          saved_mean_reward))
       U.load_state(model_file)
 
   return ActWrapper(act)
 
+
 def intToCoordinate(num, size=64):
-  if size!=64:
+  if size != 64:
     num = num * size * size // 4096
   y = num // size
   x = num - size * y
   return [x, y]
 
+
 UP, DOWN, LEFT, RIGHT = 'up', 'down', 'left', 'right'
+
 
 def shift(direction, number, matrix):
   ''' shift given 2D matrix in-place the given number of rows or columns
-      in the specified (UP, DOWN, LEFT, RIGHT) direction and return it
-  '''
+    in the specified (UP, DOWN, LEFT, RIGHT) direction and return it
+'''
   if direction in (UP):
     matrix = np.roll(matrix, -number, axis=0)
-    matrix[number:,:] = 0
+    matrix[number:, :] = 0
     return matrix
   elif direction in (DOWN):
     matrix = np.roll(matrix, number, axis=0)
-    matrix[:number,:] = 0
+    matrix[:number, :] = 0
     return matrix
   elif direction in (LEFT):
     matrix = np.roll(matrix, -number, axis=1)
-    matrix[:,number:] = 0
+    matrix[:, number:] = 0
     return matrix
   elif direction in (RIGHT):
     matrix = np.roll(matrix, number, axis=1)
-    matrix[:,:number] = 0
+    matrix[:, :number] = 0
     return matrix
   else:
     return matrix
