@@ -257,7 +257,7 @@ def learn(env,
 
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
 
-  screen = player_relative #+ path_memory
+  screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
 
   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
   player = [int(player_x.mean()), int(player_y.mean())]
@@ -314,7 +314,7 @@ def learn(env,
       obs = env.step(actions=new_action)
 
       player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
-      new_screen = player_relative #+ path_memory
+      new_screen = (player_relative == _PLAYER_NEUTRAL).astype(int)
 
       player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
       player = [int(player_x.mean()), int(player_y.mean())]
@@ -335,8 +335,7 @@ def learn(env,
       if done:
         obs = env.reset()
         player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
-
-        screen = player_relative #+ path_memory
+        screent = (player_relative == _PLAYER_NEUTRAL).astype(int)
 
         player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
