@@ -110,8 +110,8 @@ def main():
         map_name="CollectMineralShards",
         step_mul=step_mul,
         visualize=True,
-        screen_size_px=(32,32),
-        minimap_size_px=(32,32)) as env:
+        screen_size_px=(16,16),
+        minimap_size_px=(16,16)) as env:
 
       model = deepq.models.cnn_to_mlp(
         convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
@@ -119,7 +119,7 @@ def main():
       act = deepq_mineral_shards.learn(
         env,
         q_func=model,
-        num_actions=32,
+        num_actions=16,
         lr=FLAGS.lr,
         max_timesteps=FLAGS.timesteps,
         buffer_size=10000,
