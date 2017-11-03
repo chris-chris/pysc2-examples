@@ -55,18 +55,18 @@ class Model(object):
 
     pi = train_model.pi
     pac_weight = script_mask * (tf.nn.softmax(pi) - 1.0) + 1.0
-    pi = pi * pac_weight
     neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi, labels=A)
+    neglogpac *= tf.stop_gradient(pac_weight)
 
     pi_xy0 = train_model.pi_xy0
     pac_weight = script_mask * (tf.nn.softmax(pi_xy0) - 1.0) + 1.0
-    pi_xy0 = pi_xy0 * pac_weight
     logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_xy0, labels=XY0)
+    logpac_xy0 *= tf.stop_gradient(pac_weight)
 
     pi_xy1 = train_model.pi_xy1
     pac_weight = script_mask * (tf.nn.softmax(pi_xy1) - 1.0) + 1.0
-    pi_xy1 = pi_xy1 * pac_weight
     logpac_xy1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_xy1, labels=XY1)
+    logpac_xy1 *= tf.stop_gradient(logpac_xy1)
 
     pg_loss = tf.reduce_mean(ADV * neglogpac)
     # logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
