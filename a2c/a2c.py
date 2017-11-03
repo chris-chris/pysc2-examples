@@ -354,7 +354,7 @@ class Runner(object):
       # pi, pi2, x1, y1, x2, y2, v0
       pi1, pi_xy0, pi_xy1, values, states = self.model.step(self.obs, self.states, self.dones)
 
-      pi1_noise = np.random.random_sample((self.nenv,2)) * 0.3
+      pi1_noise = np.random.random_sample((self.nenv,2)) * 0.7
       # avail = self.env.available_actions()
       # print("pi1 : ", pi1)
       # print("pi1 * self.base_act_mask : ", pi1 * self.base_act_mask)
