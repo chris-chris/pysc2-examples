@@ -55,18 +55,23 @@ class Model(object):
 
     pi = train_model.pi
     pac_weight = script_mask * (tf.nn.softmax(pi) - 1.0) + 1.0
+    pac_weight = tf.reduce_sum(pac_weight * tf.one_hot(A, depth=2), axis=1)
     neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi, labels=A)
     neglogpac *= tf.stop_gradient(pac_weight)
 
     pi_xy0 = train_model.pi_xy0
     pac_weight = script_mask * (tf.nn.softmax(pi_xy0) - 1.0) + 1.0
+    pac_weight = tf.reduce_sum(pac_weight * tf.one_hot(XY0, depth=1024), axis=1)
+
     logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_xy0, labels=XY0)
     logpac_xy0 *= tf.stop_gradient(pac_weight)
 
     pi_xy1 = train_model.pi_xy1
     pac_weight = script_mask * (tf.nn.softmax(pi_xy1) - 1.0) + 1.0
+    pac_weight = tf.reduce_sum(pac_weight * tf.one_hot(XY0, depth=1024), axis=1)
+
     logpac_xy1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_xy1, labels=XY1)
-    logpac_xy1 *= tf.stop_gradient(logpac_xy1)
+    logpac_xy1 *= tf.stop_gradient(pac_weight)
 
     pg_loss = tf.reduce_mean(ADV * neglogpac)
     # logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
@@ -192,7 +197,7 @@ class Runner(object):
   def __init__(self, env, model, nsteps, nscripts, nstack, gamma, callback=None):
     self.env = env
     self.model = model
-    nh, nw, nc = (32, 32, 1)
+    nh, nw, nc = (32, 32, 3)
     self.nsteps = nsteps
     self.nscripts = nscripts
     self.nenv = nenv = env.num_envs
@@ -229,9 +234,16 @@ class Runner(object):
     self.group_id = [0 for _ in range(nenv)]
 
   def update_obs(self, obs): # (self.nenv, 32, 32, 2)
-    obs = np.asarray(obs, dtype=np.int32).swapaxes(1, 2).swapaxes(2, 3)
-    self.obs = np.roll(self.obs, shift=-1, axis=3)
-    self.obs[:, :, :, -1:] = obs[:, :, :, :]
+    #obs = np.asarray(obs, dtype=np.int32).swapaxes(1, 2).swapaxes(2, 3)
+    self.obs = np.roll(self.obs, shift=-3, axis=3)
+    new_map = np.zeros((self.nenv, 32, 32, 3))
+    new_map[:,:,:,-1] = obs[:,0,:,:]
+    for env_num in range(self.nenv):
+      marine0 = self.xy_per_marine[env_num]["0"]
+      marine1 = self.xy_per_marine[env_num]["1"]
+      new_map[env_num,marine0[0],marine0[1],-3] = 1
+      new_map[env_num,marine1[0],marine1[1],-2] = 1
+    self.obs[:, :, :, -3:] = new_map
     # could not broadcast input array from shape (4,1,32,32) into shape (4,4,32)
 
   def update_available(self, _available_actions):
@@ -601,7 +613,7 @@ def learn(policy, env, seed, total_timesteps=int(40e6),
   set_global_seeds(seed)
 
   nenvs = nprocs
-  ob_space = (32, 32, 1) # env.observation_space
+  ob_space = (32, 32, 3) # env.observation_space
   ac_space = (32, 32)
   make_model = lambda : Model(policy, ob_space, ac_space, nenvs,
                               total_timesteps,
