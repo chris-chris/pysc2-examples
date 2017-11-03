@@ -51,11 +51,22 @@ class Model(object):
 
     # Policy 1 : Base Action : train_model.pi label = A
 
+    script_mask = tf.concat([tf.zeros([nscripts * nsteps, 1]),tf.ones([(nprocs - nscripts) * nsteps, 1])],axis=0)
 
-    neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi, labels=A)
-    logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy0, labels=XY0)
+    pi = train_model.pi
+    pac_weight = script_mask * (tf.nn.softmax(pi) - 1.0) + 1.0
+    pi = pi * pac_weight
+    neglogpac = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi, labels=A)
 
-    logpac_xy1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=train_model.pi_xy1, labels=XY1)
+    pi_xy0 = train_model.pi_xy0
+    pac_weight = script_mask * (tf.nn.softmax(pi_xy0) - 1.0) + 1.0
+    pi_xy0 = pi_xy0 * pac_weight
+    logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_xy0, labels=XY0)
+
+    pi_xy1 = train_model.pi_xy1
+    pac_weight = script_mask * (tf.nn.softmax(pi_xy1) - 1.0) + 1.0
+    pi_xy1 = pi_xy1 * pac_weight
+    logpac_xy1 = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_xy1, labels=XY1)
 
     pg_loss = tf.reduce_mean(ADV * neglogpac)
     # logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
@@ -65,9 +76,11 @@ class Model(object):
     # pg_loss_xy0 = pg_loss_xy0 - ent_coef * entropy_xy0
 
     vf_ = tf.squeeze(train_model.vf)
-    vf_mask = tf.concat([tf.zeros([nscripts * nsteps, 1]),tf.ones([(nprocs - nscripts) * nsteps, 1])],axis=0)
+
     vf_r = tf.concat([tf.ones([nscripts * nsteps, 1]),tf.zeros([(nprocs - nscripts) * nsteps, 1])],axis=0) * R
-    vf_masked = vf_ * vf_mask + vf_r
+    vf_masked = vf_ * script_mask + vf_r
+
+
 
     #vf_mask[0:nscripts * nsteps] = R[0:nscripts * nsteps]
 
