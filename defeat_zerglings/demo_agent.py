@@ -40,6 +40,7 @@ _SELECT_POINT = actions.FUNCTIONS.select_point.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
 
+
 class MarineAgent(base_agent.BaseAgent):
   """A random agent for starcraft."""
   demo_replay = []
@@ -57,36 +58,36 @@ class MarineAgent(base_agent.BaseAgent):
 
     enemy_y, enemy_x = (player_relative == _PLAYER_HOSTILE).nonzero()
 
-
     #2. Run away from nearby enemy
     closest, min_dist = None, None
 
-    if(len(player) == 2):
+    if (len(player) == 2):
       for p in zip(enemy_x, enemy_y):
         dist = np.linalg.norm(np.array(player) - np.array(p))
         if not min_dist or dist < min_dist:
           closest, min_dist = p, dist
 
-
     #3. Sparse!
-    friendly_y, friendly_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+    friendly_y, friendly_x = (
+      player_relative == _PLAYER_FRIENDLY).nonzero()
 
     closest_friend, min_dist_friend = None, None
-    if(len(player) == 2):
+    if (len(player) == 2):
       for p in zip(friendly_x, friendly_y):
         dist = np.linalg.norm(np.array(player) - np.array(p))
         if not min_dist_friend or dist < min_dist_friend:
           closest_friend, min_dist_friend = p, dist
 
-    if(min_dist != None and min_dist <= 7):
+    if (min_dist != None and min_dist <= 7):
 
       obs, new_action = common.marine_action(self.env, obs, player, 2)
 
-    elif(min_dist_friend != None and min_dist_friend <= 3):
+    elif (min_dist_friend != None and min_dist_friend <= 3):
 
-      sparse_or_attack = np.random.randint(0,2)
+      sparse_or_attack = np.random.randint(0, 2)
 
-      obs, new_action = common.marine_action(self.env, obs, player, sparse_or_attack)
+      obs, new_action = common.marine_action(self.env, obs, player,
+                                             sparse_or_attack)
 
     else:
 

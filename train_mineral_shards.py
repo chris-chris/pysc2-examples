@@ -65,9 +65,9 @@ def main():
   print("num_agents : %s" % FLAGS.num_agents)
   print("lr : %s" % FLAGS.lr)
 
-  if(FLAGS.lr == 0):
+  if (FLAGS.lr == 0):
     FLAGS.lr = random.uniform(0.00001, 0.001)
-    
+
   print("random lr : %s" % FLAGS.lr)
 
   lr_round = round(FLAGS.lr, 8)
@@ -84,13 +84,9 @@ def main():
       FLAGS.prioritized, FLAGS.dueling, lr_round, start_time)
   elif (FLAGS.algorithm == "a2c"):
     logdir = "tensorboard/mineral/%s/%s_n%s_s%s_nsteps%s/lr%s/%s" % (
-      FLAGS.algorithm,
-      FLAGS.timesteps,
-      FLAGS.num_agents + FLAGS.num_scripts,
-      FLAGS.num_scripts,
-      FLAGS.nsteps,
-      lr_round,
-      start_time)
+      FLAGS.algorithm, FLAGS.timesteps,
+      FLAGS.num_agents + FLAGS.num_scripts, FLAGS.num_scripts,
+      FLAGS.nsteps, lr_round, start_time)
 
   if (FLAGS.log == "tensorboard"):
     Logger.DEFAULT \
@@ -110,8 +106,8 @@ def main():
         map_name="CollectMineralShards",
         step_mul=step_mul,
         visualize=True,
-        screen_size_px=(16,16),
-        minimap_size_px=(16,16)) as env:
+        screen_size_px=(16, 16),
+        minimap_size_px=(16, 16)) as env:
 
       model = deepq.models.cnn_to_mlp(
         convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
@@ -133,14 +129,13 @@ def main():
         callback=deepq_callback)
       act.save("mineral_shards.pkl")
 
-
   elif (FLAGS.algorithm == "deepq-4way"):
 
     with sc2_env.SC2Env(
         map_name="CollectMineralShards",
         step_mul=step_mul,
-        screen_size_px=(32,32),
-        minimap_size_px=(32,32),
+        screen_size_px=(32, 32),
+        minimap_size_px=(32, 32),
         visualize=True) as env:
 
       model = deepq.models.cnn_to_mlp(
@@ -196,8 +191,8 @@ def deepq_callback(locals, globals):
   #pprint.pprint(locals)
   global max_mean_reward, last_filename
   if ('done' in locals and locals['done'] == True):
-    if ('mean_100ep_reward' in locals and locals['num_episodes'] >= 10 and
-            locals['mean_100ep_reward'] > max_mean_reward):
+    if ('mean_100ep_reward' in locals and locals['num_episodes'] >= 10
+        and locals['mean_100ep_reward'] > max_mean_reward):
       print("mean_100ep_reward : %s max_mean_reward : %s" %
             (locals['mean_100ep_reward'], max_mean_reward))
 
@@ -235,12 +230,13 @@ def deepq_4way_callback(locals, globals):
   #pprint.pprint(locals)
   global max_mean_reward, last_filename
   if ('done' in locals and locals['done'] == True):
-    if ('mean_100ep_reward' in locals and locals['num_episodes'] >= 10 and
-            locals['mean_100ep_reward'] > max_mean_reward):
+    if ('mean_100ep_reward' in locals and locals['num_episodes'] >= 10
+        and locals['mean_100ep_reward'] > max_mean_reward):
       print("mean_100ep_reward : %s max_mean_reward : %s" %
             (locals['mean_100ep_reward'], max_mean_reward))
 
-      if (not os.path.exists(os.path.join(PROJ_DIR, 'models/deepq-4way/'))):
+      if (not os.path.exists(
+          os.path.join(PROJ_DIR, 'models/deepq-4way/'))):
         try:
           os.mkdir(os.path.join(PROJ_DIR, 'models/'))
         except Exception as e:
@@ -258,9 +254,9 @@ def deepq_4way_callback(locals, globals):
       act = deepq_mineral_4way.ActWrapper(locals['act'])
       #act_y = deepq_mineral_shards.ActWrapper(locals['act_y'])
 
-      filename = os.path.join(
-        PROJ_DIR,
-        'models/deepq-4way/mineral_%s.pkl' % locals['mean_100ep_reward'])
+      filename = os.path.join(PROJ_DIR,
+                              'models/deepq-4way/mineral_%s.pkl' %
+                              locals['mean_100ep_reward'])
       act.save(filename)
       # filename = os.path.join(
       #   PROJ_DIR,
@@ -274,8 +270,8 @@ def a2c_callback(locals, globals):
   global max_mean_reward, last_filename
   #pprint.pprint(locals)
 
-  if ('mean_100ep_reward' in locals and locals['num_episodes'] >= 10 and
-          locals['mean_100ep_reward'] > max_mean_reward):
+  if ('mean_100ep_reward' in locals and locals['num_episodes'] >= 10
+      and locals['mean_100ep_reward'] > max_mean_reward):
     print("mean_100ep_reward : %s max_mean_reward : %s" %
           (locals['mean_100ep_reward'], max_mean_reward))
 
@@ -297,7 +293,8 @@ def a2c_callback(locals, globals):
     model = locals['model']
 
     filename = os.path.join(
-      PROJ_DIR, 'models/a2c/mineral_%s.pkl' % locals['mean_100ep_reward'])
+      PROJ_DIR,
+      'models/a2c/mineral_%s.pkl' % locals['mean_100ep_reward'])
     model.save(filename)
     print("save best mean_100ep_reward model to %s" % filename)
     last_filename = filename

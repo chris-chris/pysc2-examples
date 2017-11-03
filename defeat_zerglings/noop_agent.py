@@ -40,6 +40,7 @@ _SELECT_POINT = actions.FUNCTIONS.select_point.id
 _NOT_QUEUED = [0]
 _SELECT_ALL = [0]
 
+
 class NOOPAgent(base_agent.BaseAgent):
   """A random agent for starcraft."""
   demo_replay = []

@@ -18,6 +18,7 @@ import sys
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
 
+
 def main():
   with sc2_env.SC2Env(
       map_name="CollectMineralShards",
@@ -26,9 +27,8 @@ def main():
       save_replay_episodes=10,
       replay_dir='replay',
       game_steps_per_episode=steps * step_mul,
-      screen_size_px=(32,32),
-      minimap_size_px=(32,32)
-  ) as env:
+      screen_size_px=(32, 32),
+      minimap_size_px=(32, 32)) as env:
 
     demo_replay = []
 

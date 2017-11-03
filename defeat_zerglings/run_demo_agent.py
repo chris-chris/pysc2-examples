@@ -19,6 +19,7 @@ steps = 20000
 
 FLAGS = flags.FLAGS
 
+
 def main():
   FLAGS(sys.argv)
   with sc2_env.SC2Env(
