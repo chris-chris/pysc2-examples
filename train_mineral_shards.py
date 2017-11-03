@@ -109,7 +109,9 @@ def main():
     with sc2_env.SC2Env(
         map_name="CollectMineralShards",
         step_mul=step_mul,
-        visualize=True) as env:
+        visualize=True,
+        screen_size_px=(32,32),
+        minimap_size_px=(32,32)) as env:
 
       model = deepq.models.cnn_to_mlp(
         convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
@@ -117,7 +119,7 @@ def main():
       act = deepq_mineral_shards.learn(
         env,
         q_func=model,
-        num_actions=4,
+        num_actions=64,
         lr=1e-3,
         max_timesteps=20000000,
         buffer_size=10000,

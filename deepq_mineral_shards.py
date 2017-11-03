@@ -192,7 +192,7 @@ def learn(env,
   def make_obs_ph(name):
     return U.BatchInput((32, 32), name=name)
 
-  act, train, update_target, debug = deepq.build_train(
+  act_x, train_x, update_target_x, debug_x = deepq.build_train(
     make_obs_ph=make_obs_ph,
     q_func=q_func,
     num_actions=num_actions,
@@ -201,16 +201,16 @@ def learn(env,
     grad_norm_clipping=10,
     scope="deepq_x"
   )
-  #
-  # act_y, train_y, update_target_y, debug_y = deepq.build_train(
-  #   make_obs_ph=make_obs_ph,
-  #   q_func=q_func,
-  #   num_actions=num_actions,
-  #   optimizer=tf.train.AdamOptimizer(learning_rate=lr),
-  #   gamma=gamma,
-  #   grad_norm_clipping=10,
-  #   scope="deepq_y"
-  # )
+
+  act_y, train_y, update_target_y, debug_y = deepq.build_train(
+    make_obs_ph=make_obs_ph,
+    q_func=q_func,
+    num_actions=num_actions,
+    optimizer=tf.train.AdamOptimizer(learning_rate=lr),
+    gamma=gamma,
+    grad_norm_clipping=10,
+    scope="deepq_y"
+  )
 
   act_params = {
     'make_obs_ph': make_obs_ph,
@@ -220,24 +220,24 @@ def learn(env,
 
   # Create the replay buffer
   if prioritized_replay:
-    replay_buffer = PrioritizedReplayBuffer(buffer_size, alpha=prioritized_replay_alpha)
-    # replay_buffer_y = PrioritizedReplayBuffer(buffer_size, alpha=prioritized_replay_alpha)
+    replay_buffer_x = PrioritizedReplayBuffer(buffer_size, alpha=prioritized_replay_alpha)
+    replay_buffer_y = PrioritizedReplayBuffer(buffer_size, alpha=prioritized_replay_alpha)
 
     if prioritized_replay_beta_iters is None:
       prioritized_replay_beta_iters = max_timesteps
-    beta_schedule = LinearSchedule(prioritized_replay_beta_iters,
+    beta_schedule_x = LinearSchedule(prioritized_replay_beta_iters,
                                    initial_p=prioritized_replay_beta0,
                                    final_p=1.0)
 
-    # beta_schedule_y = LinearSchedule(prioritized_replay_beta_iters,
-    #                                  initial_p=prioritized_replay_beta0,
-    #                                  final_p=1.0)
+    beta_schedule_y = LinearSchedule(prioritized_replay_beta_iters,
+                                     initial_p=prioritized_replay_beta0,
+                                     final_p=1.0)
   else:
-    replay_buffer = ReplayBuffer(buffer_size)
-    # replay_buffer_y = ReplayBuffer(buffer_size)
+    replay_buffer_x = ReplayBuffer(buffer_size)
+    replay_buffer_y = ReplayBuffer(buffer_size)
 
-    beta_schedule = None
-    # beta_schedule_y = None
+    beta_schedule_x = None
+    beta_schedule_y = None
   # Create the schedule for exploration starting from 1.
   exploration = LinearSchedule(schedule_timesteps=int(exploration_fraction * max_timesteps),
                                initial_p=1.0,
@@ -245,8 +245,8 @@ def learn(env,
 
   # Initialize the parameters and copy them to the target network.
   U.initialize()
-  update_target()
-  # update_target_y()
+  update_target_x()
+  update_target_y()
 
   episode_rewards = [0.0]
   saved_mean_reward = None
@@ -291,9 +291,9 @@ def learn(env,
         kwargs['update_param_noise_threshold'] = update_param_noise_threshold
         kwargs['update_param_noise_scale'] = True
 
-      action = act(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
+      action_x = act_x(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
 
-      # action_y = act_y(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
+      action_y = act_y(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
 
       reset = False
 
@@ -324,8 +324,8 @@ def learn(env,
       done = obs[0].step_type == environment.StepType.LAST
 
       # Store transition in the replay buffer.
-      replay_buffer.add(screen, action, rew, new_screen, float(done))
-      # replay_buffer_y.add(screen, action_y, rew, new_screen, float(done))
+      replay_buffer_x.add(screen, action_x, rew, new_screen, float(done))
+      replay_buffer_y.add(screen, action_y, rew, new_screen, float(done))
 
       screen = new_screen
 
@@ -352,35 +352,35 @@ def learn(env,
         # Minimize the error in Bellman's equation on a batch sampled from replay buffer.
         if prioritized_replay:
 
-          experience_x = replay_buffer.sample(batch_size, beta=beta_schedule.value(t))
+          experience_x = replay_buffer_x.sample(batch_size, beta=beta_schedule_x.value(t))
           (obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x, batch_idxes_x) = experience_x
 
-          # experience_y = replay_buffer.sample(batch_size, beta=beta_schedule.value(t))
-          # (obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y, batch_idxes_y) = experience_y
+          experience_y = replay_buffer_y.sample(batch_size, beta=beta_schedule_y.value(t))
+          (obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y, batch_idxes_y) = experience_y
         else:
 
-          obses_t, actions, rewards, obses_tp1, dones = replay_buffer.sample(batch_size)
-          weights, batch_idxes = np.ones_like(rewards), None
+          obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x = replay_buffer_x.sample(batch_size)
+          weights_x, batch_idxes_x = np.ones_like(rewards_x), None
 
-          # obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y = replay_buffer_y.sample(batch_size)
-          # weights_y, batch_idxes_y = np.ones_like(rewards_y), None
+          obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y = replay_buffer_y.sample(batch_size)
+          weights_y, batch_idxes_y = np.ones_like(rewards_y), None
 
-        td_errors = train(obses_t, actions, rewards, obses_tp1, dones, weights)
+        td_errors_x = train_x(obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x)
 
-        # td_errors_y = train_x(obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y)
+        td_errors_y = train_x(obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y)
 
 
         if prioritized_replay:
-          new_priorities = np.abs(td_errors) + prioritized_replay_eps
-          # new_priorities = np.abs(td_errors) + prioritized_replay_eps
-          replay_buffer.update_priorities(batch_idxes, new_priorities)
-          # replay_buffer.update_priorities(batch_idxes, new_priorities)
+          new_priorities_x = np.abs(td_errors_x) + prioritized_replay_eps
+          new_priorities_y = np.abs(td_errors_y) + prioritized_replay_eps
+          replay_buffer_x.update_priorities(batch_idxes_x, new_priorities_x)
+          replay_buffer_y.update_priorities(batch_idxes_y, new_priorities_y)
 
 
       if t > learning_starts and t % target_network_update_freq == 0:
         # Update target network periodically.
-        update_target()
-        # update_target_y()
+        update_target_x()
+        update_target_y()
 
       mean_100ep_reward = round(np.mean(episode_rewards[-101:-1]), 1)
       num_episodes = len(episode_rewards)
@@ -406,11 +406,11 @@ def learn(env,
         logger.log("Restored model with mean reward: {}".format(saved_mean_reward))
       U.load_state(model_file)
 
-  return ActWrapper(act)
+  return ActWrapper(act_x), ActWrapper(act_y)
 
-def intToCoordinate(num, size=64):
-  if size!=64:
-    num = num * size * size // 4096
+def intToCoordinate(num, size=32):
+  if size!=32:
+    num = num * size * size // 1024
   y = num // size
   x = num - size * y
   return [x, y]

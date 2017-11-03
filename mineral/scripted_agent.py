@@ -52,7 +52,8 @@ class CollectMineralShards(base_agent.BaseAgent):
 
     if(len(self.group_list) == 0 or common.check_group_list(self.env, [obs])):
       print("init group list")
-      obs = common.init(self.env, [obs])[0]
+      obs, xy_per_marine = common.init(self.env, [obs])
+      obs = obs[0]
       self.group_list = common.update_group_list([obs])
 
     #print("group_list ", self.group_list)
@@ -90,7 +91,7 @@ class CollectMineralShards(base_agent.BaseAgent):
             #print("continue since partner will take care of it ", p)
             continue
 
-        pp = [p[0]//2*2, p[1]//2*2]
+        pp = [p[0], p[1]]
         if(pp not in points):
           points.append(pp)
 
