@@ -75,7 +75,7 @@ $ python train_mineral_shards.py --algorithm=deepq --prioritized=True --dueling=
 ## 4-2. Train it with A2C(A3C)
 
 ```shell
-$ python train_mineral_shards.py --algorithm=a2c --num_cpu=16--timesteps=2000000
+$ python train_mineral_shards.py --algorithm=a2c --num_agents=2 --num_scripts=2 --timesteps=2000000
 ```
 
 
