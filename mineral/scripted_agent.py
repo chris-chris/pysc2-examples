@@ -72,7 +72,9 @@ class CollectMineralShards(base_agent.BaseAgent):
 
       selected = obs.observation["screen"][_SELECTED]
       player_y, player_x = (selected == _PLAYER_FRIENDLY).nonzero()
-
+      if(len(player_x) == 0):
+        return actions.FunctionCall(_NO_OP, [])
+      
       player = [int(player_x.mean()), int(player_y.mean())]
       points = [player]
       closest, min_dist = None, None
