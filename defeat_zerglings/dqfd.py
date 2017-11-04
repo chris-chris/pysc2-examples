@@ -303,7 +303,7 @@ act: ActWrapper
       new_action = None
 
       obs, new_action = common.marine_action(env, obs, player, action)
-      army_count = env._obs.observation.player_common.army_count
+      army_count = env._obs[0].observation.player_common.army_count
 
       try:
         if army_count > 0 and _ATTACK_SCREEN in obs[0].observation["available_actions"]:
