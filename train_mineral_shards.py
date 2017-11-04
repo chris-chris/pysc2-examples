@@ -2,12 +2,10 @@ import sys
 import os
 
 from absl import flags
-import deepq
+from baselines import deepq
 from pysc2.env import sc2_env
 from pysc2.lib import actions
 import os
-from baselines import logger
-from baselines.common import set_global_seeds
 
 import deepq_mineral_shards
 import datetime
@@ -29,7 +27,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_ALL = [0]
 _NOT_QUEUED = [0]
 
-step_mul = 1
+step_mul = 8
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("map", "CollectMineralShards",
