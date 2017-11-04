@@ -22,13 +22,13 @@ This example program was built on
 The easiest way to get PySC2 is to use pip:
 
 ```shell
-$ pip install pysc2
+$ pip install git+https://github.com/deepmind/pysc2
 ```
 
 Also, you have to install `baselines` library.
 
 ```shell
-$ pip install baselines
+$ pip install git+https://github.com/openai/baselines
 ```
 
 ## 2. Install StarCraft II
