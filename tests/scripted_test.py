@@ -18,6 +18,9 @@ import sys
 _NO_OP = sc2_actions.FUNCTIONS.no_op.id
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 
+FLAGS = flags.FLAGS
+FLAGS(sys.argv)
+
 class TestScripted(utils.TestCase):
   steps = 2000
   step_mul = 1
