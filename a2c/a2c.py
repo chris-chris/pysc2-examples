@@ -261,7 +261,7 @@ class Runner(object):
     self.base_act_mask = np.full((self.nenv, 2), 0, dtype=np.uint8)
     obs, rewards, dones, available_actions, army_counts, control_groups, selected, xy_per_marine = env.reset(
     )
-    self.xy_per_marine = [{} for _ in range(nenv)]
+    self.xy_per_marine = [{"0":[0,0], "1":[0,0]} for _ in range(nenv)]
     for env_num, data in enumerate(xy_per_marine):
       self.xy_per_marine[env_num] = data
     self.army_counts = army_counts
