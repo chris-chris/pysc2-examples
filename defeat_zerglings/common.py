@@ -267,6 +267,11 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
   else:
     group_id = 0
 
+  if("0" not in xy_per_marine):
+    xy_per_marine["0"] = [0,0]
+  if("1" not in xy_per_marine):
+    xy_per_marine["1"] = [0,0]
+
   return actions, group_id, dest_per_marine, xy_per_marine
 
 
