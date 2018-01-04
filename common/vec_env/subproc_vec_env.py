@@ -8,7 +8,7 @@ from pysc2.lib import features, actions
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _SELECTED = features.SCREEN_FEATURES.selected.index
 
-from defeat_zerglings import common
+from common import common
 
 
 def worker(remote, map_name, i):
@@ -21,6 +21,7 @@ def worker(remote, map_name, i):
     available_actions = None
     result = None
     group_list = []
+    xy_per_marine = {}
     while True:
       cmd, data = remote.recv()
       if cmd == 'step':
@@ -38,12 +39,12 @@ def worker(remote, map_name, i):
         action1 = data[0][0]
         action2 = data[0][1]
         func = actions.FUNCTIONS[action1[0]]
-        #print("agent(",i," ) action : ", action1, " func : ", func)
+        # print("agent(",i," ) action : ", action1, " func : ", func)
         func = actions.FUNCTIONS[action2[0]]
         #print("agent(",i," ) action : ", action2, " func : ", func, "xy :", action2[1][1])
         x, y = action2[1][1]
         move = True
-        if (x == 0 and y == 0):
+        if (x == -1 and y == -1):
           move = False
         result = env.step(actions=[action1])
         reward += result[0].reward
@@ -64,6 +65,7 @@ def worker(remote, map_name, i):
         # extra = np.zeros((1, 32, 32))
         control_groups = result[0].observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
+
         # extra[0,0,0] = army_count
         # for id, group in enumerate(control_groups):
         #   control_group_id = id
@@ -90,6 +92,18 @@ def worker(remote, map_name, i):
           # reward = result[0].reward
           # done = result[0].step_type == environment.StepType.LAST
           info = result[0].observation["available_actions"]
+        
+        group_id = action1[1][1][0]
+        # print("group_id:", group_id)
+
+        player_y, player_x = (result[0].observation["screen"][_SELECTED] == 1).nonzero()
+
+        if (len(player_x) > 0):
+          if (group_id == 1):
+            xy_per_marine["1"] = [int(player_x.mean()), int(player_y.mean())]
+          else:
+            xy_per_marine["0"] = [int(player_x.mean()), int(player_y.mean())]
+        
         remote.send((ob, reward, done, info, army_count,
                      control_groups, selected, xy_per_marine))
       elif cmd == 'reset':
