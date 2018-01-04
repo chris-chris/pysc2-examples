@@ -19,7 +19,7 @@ from pysc2.env import environment
 from pysc2.lib import features
 from pysc2.lib import actions
 
-from defeat_zerglings import common
+from common import common
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 

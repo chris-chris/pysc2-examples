@@ -15,13 +15,14 @@ from baselines.acktr.utils import cat_entropy, mse
 from pysc2.env import environment
 from pysc2.lib import actions as sc2_actions
 
-from defeat_zerglings import common
+from common import common
+
+import nsml
 
 _CONTROL_GROUP_RECALL = 0
 _NOT_QUEUED = 0
 
 # np.set_printoptions(threshold=np.inf)
-
 
 class Model(object):
   def __init__(self,
@@ -49,6 +50,7 @@ class Model(object):
       inter_op_parallelism_threads=nprocs)
     config.gpu_options.allow_growth = True
     self.sess = sess = tf.Session(config=config)
+    nsml.bind(sess=sess)
     #nact = ac_space.n
     nbatch = nenvs * nsteps
     A = tf.placeholder(tf.int32, [nbatch])
@@ -56,8 +58,9 @@ class Model(object):
     XY0 = tf.placeholder(tf.int32, [nbatch])
     XY1 = tf.placeholder(tf.int32, [nbatch])
 
+    # ADV == TD_TARGET - values
     ADV = tf.placeholder(tf.float32, [nbatch])
-    R = tf.placeholder(tf.float32, [nbatch])
+    TD_TARGET = tf.placeholder(tf.float32, [nbatch])
     PG_LR = tf.placeholder(tf.float32, [])
     VF_LR = tf.placeholder(tf.float32, [])
 
@@ -82,6 +85,10 @@ class Model(object):
       logits=pi, labels=A)
     neglogpac *= tf.stop_gradient(pac_weight)
 
+    inv_A = 1.0 - tf.cast(A, tf.float32)
+
+    # One hot representation of chosen marine.
+    # [batch_size, 2]
     pi_xy0 = train_model.pi_xy0
     pac_weight = script_mask * (tf.nn.softmax(pi_xy0) - 1.0) + 1.0
     pac_weight = tf.reduce_sum(
@@ -90,15 +97,18 @@ class Model(object):
     logpac_xy0 = tf.nn.sparse_softmax_cross_entropy_with_logits(
       logits=pi_xy0, labels=XY0)
     logpac_xy0 *= tf.stop_gradient(pac_weight)
+    logpac_xy0 *= inv_A
 
     pi_xy1 = train_model.pi_xy1
     pac_weight = script_mask * (tf.nn.softmax(pi_xy1) - 1.0) + 1.0
     pac_weight = tf.reduce_sum(
       pac_weight * tf.one_hot(XY0, depth=1024), axis=1)
 
+    # 1D? 2D?
     logpac_xy1 = tf.nn.sparse_softmax_cross_entropy_with_logits(
       logits=pi_xy1, labels=XY1)
     logpac_xy1 *= tf.stop_gradient(pac_weight)
+    logpac_xy1 *= tf.cast(A, tf.float32)
 
     pg_loss = tf.reduce_mean(ADV * neglogpac)
     # logpac_xy0 = logpac_xy0 *  tf.cast(tf.equal(A, 2), tf.float32)
@@ -114,17 +124,18 @@ class Model(object):
         tf.ones([nscripts * nsteps, 1]),
         tf.zeros([(nprocs - nscripts) * nsteps, 1])
       ],
-      axis=0) * R
+      axis=0) * TD_TARGET
     vf_masked = vf_ * script_mask + vf_r
 
     #vf_mask[0:nscripts * nsteps] = R[0:nscripts * nsteps]
 
-    vf_loss = tf.reduce_mean(mse(vf_masked, R))
-    entropy = tf.reduce_mean(cat_entropy(train_model.pi))
+    vf_loss = tf.reduce_mean(mse(vf_masked, TD_TARGET))
+    entropy_a = tf.reduce_mean(cat_entropy(train_model.pi))
     entropy_xy0 = tf.reduce_mean(cat_entropy(train_model.pi_xy0))
     entropy_xy1 = tf.reduce_mean(cat_entropy(train_model.pi_xy1))
+    entropy = entropy_a + entropy_xy0 + entropy_xy1
 
-    loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
+    loss = pg_loss + vf_loss * vf_coef
 
     params = find_trainable_variables("model")
     grads = tf.gradients(loss, params)
@@ -177,8 +188,8 @@ class Model(object):
 
     self.lr = Scheduler(v=lr, nvalues=total_timesteps, schedule=lrschedule)
 
-    def train(obs, states, rewards, masks, actions, xy0, xy1, values):
-      advs = rewards - values
+    def train(obs, states, td_targets, masks, actions, xy0, xy1, values):
+      advs = td_targets - values
       for step in range(len(obs)):
         cur_lr = self.lr.value()
 
@@ -188,7 +199,7 @@ class Model(object):
         XY0: xy0,
         XY1: xy1,
         ADV: advs,
-        R: rewards,
+        TD_TARGET: td_targets,
         PG_LR: cur_lr
       }
       if states != []:
@@ -203,13 +214,13 @@ class Model(object):
          pg_loss_xy1, entropy_xy1, _train_xy1],
         td_map
       )
-      print("policy_loss : ", policy_loss, " value_loss : ", value_loss,
-            " policy_entropy : ", policy_entropy)
+      # print("policy_loss : ", policy_loss, " value_loss : ", value_loss,
+      #       " policy_entropy : ", policy_entropy)
 
-      print("policy_loss_xy0 : ", policy_loss_xy0,
-            " policy_entropy_xy0 : ", policy_entropy_xy0)
-      print("policy_loss_xy1 : ", policy_loss_xy1,
-            " policy_entropy_xy1 : ", policy_entropy_xy1)
+      # print("policy_loss_xy0 : ", policy_loss_xy0,
+      #       " policy_entropy_xy0 : ", policy_entropy_xy0)
+      # print("policy_loss_xy1 : ", policy_loss_xy1,
+      #       " policy_entropy_xy1 : ", policy_entropy_xy1)
 
       return policy_loss, value_loss, policy_entropy, \
              policy_loss_xy0, policy_entropy_xy0, \
@@ -293,6 +304,12 @@ class Runner(object):
     new_map = np.zeros((self.nenv, 32, 32, 3))
     new_map[:, :, :, -1] = obs[:, 0, :, :]
     for env_num in range(self.nenv):
+      # print("xy_per_marine: ", self.xy_per_marine)
+      if "0" not in self.xy_per_marine[env_num]:
+        self.xy_per_marine[env_num]["0"] = [0,0]
+      if "1" not in self.xy_per_marine[env_num]:
+        self.xy_per_marine[env_num]["1"] = [0,0]
+
       marine0 = self.xy_per_marine[env_num]["0"]
       marine1 = self.xy_per_marine[env_num]["1"]
       new_map[env_num, marine0[0], marine0[1], -3] = 1
@@ -421,7 +438,7 @@ class Runner(object):
     return actions
 
   def run(self):
-    mb_obs, mb_rewards, mb_base_actions, \
+    mb_obs, mb_td_targets, mb_base_actions, \
     mb_xy0, mb_xy1, \
     mb_values, mb_dones \
       = [],[],[],[],[],[], []
@@ -566,6 +583,7 @@ class Runner(object):
       self.control_groups = control_groups
       self.selected = selected
       for env_num, data in enumerate(xy_per_marine):
+        # print("env_num", env_num, "xy_per_marine:", data)
         self.xy_per_marine[env_num] = data
       self.update_available(available_actions)
 
@@ -579,35 +597,57 @@ class Runner(object):
           num_episodes = self.episodes
           self.episode_rewards.append(self.total_reward[n])
 
+          mean_100ep_reward = round(
+            np.mean(self.episode_rewards[-101:-1]), 1)
+
           if (n < self.nscripts):  # scripted agents
             self.episode_rewards_script.append(
               self.total_reward[n])
             mean_100ep_reward_script = round(
               np.mean(self.episode_rewards_script[-101:-1]), 1)
-            logger.record_tabular("reward script",
-                                  self.total_reward[n])
-            logger.record_tabular("mean reward script",
-                                  mean_100ep_reward_script)
+            # logger.record_tabular("reward script",
+            #                       self.total_reward[n])
+            # logger.record_tabular("mean reward script",
+            #                       mean_100ep_reward_script)
+            nsml.report(
+              reward_script=self.total_reward[n],
+              mean_reward_script=mean_100ep_reward_script,
+              reward=self.total_reward[n],
+              mean_100ep_reward=mean_100ep_reward,
+              episodes=self.episodes,
+              step=self.episodes,
+              scope=locals()
+            )
           else:
             self.episode_rewards_a2c.append(self.total_reward[n])
             mean_100ep_reward_a2c = round(
               np.mean(self.episode_rewards_a2c[-101:-1]), 1)
-            logger.record_tabular("reward a2c",
-                                  self.total_reward[n])
-            logger.record_tabular("mean reward a2c",
-                                  mean_100ep_reward_a2c)
+            # logger.record_tabular("reward a2c",
+            #                       self.total_reward[n])
+            # logger.record_tabular("mean reward a2c",
+            #                       mean_100ep_reward_a2c)
+            nsml.report(
+              reward_a2c=self.total_reward[n],
+              mean_reward_a2c=mean_100ep_reward_a2c,
+              reward=self.total_reward[n],
+              mean_100ep_reward=mean_100ep_reward,
+              episodes=self.episodes,
+              step=self.episodes,
+              scope=locals()
+            )
 
-          mean_100ep_reward = round(
-            np.mean(self.episode_rewards[-101:-1]), 1)
 
-          print("env %s done! reward : %s mean_100ep_reward : %s " %
-                (n, self.total_reward[n], mean_100ep_reward))
-          logger.record_tabular("reward", self.total_reward[n])
-          logger.record_tabular("mean 100 episode reward",
-                                mean_100ep_reward)
-          logger.record_tabular("episodes", self.episodes)
+          #print("env %s done! reward : %s mean_100ep_reward : %s " %
+          #      (n, self.total_reward[n], mean_100ep_reward))
+          
+          # logger.record_tabular("reward", self.total_reward[n])
+          # logger.record_tabular("mean 100 episode reward",
+          #                       mean_100ep_reward)
+          # logger.record_tabular("episodes", self.episodes)
 
-          logger.dump_tabular()
+          # logger.dump_tabular()
+
+          
 
           self.total_reward[n] = 0
           self.group_list[n] = []
@@ -616,16 +656,16 @@ class Runner(object):
           if self.callback is not None:
             self.callback(locals(), globals())
 
-      print("rewards : ", rewards)
-      print("self.total_reward :", self.total_reward)
+      #print("rewards : ", rewards)
+      #print("self.total_reward :", self.total_reward)
       self.update_obs(obs)
-      mb_rewards.append(rewards)
+      mb_td_targets.append(rewards)
     mb_dones.append(self.dones)
     #batch of steps to batch of rollouts
     mb_obs = np.asarray(
       mb_obs, dtype=np.uint8).swapaxes(1, 0).reshape(
       self.batch_ob_shape)
-    mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
+    mb_td_targets = np.asarray(mb_td_targets, dtype=np.float32).swapaxes(1, 0)
     mb_base_actions = np.asarray(
       mb_base_actions, dtype=np.int32).swapaxes(1, 0)
     # mb_sub3_actions = np.asarray(mb_sub3_actions, dtype=np.int32).swapaxes(1, 0)
@@ -654,7 +694,7 @@ class Runner(object):
                                    self.dones).tolist()
     #discount/bootstrap off value fn
     for n, (rewards, dones, value) in enumerate(
-        zip(mb_rewards, mb_dones, last_values)):
+        zip(mb_td_targets, mb_dones, last_values)):
       rewards = rewards.tolist()
       dones = dones.tolist()
       if dones[-1] == 0:
@@ -662,8 +702,8 @@ class Runner(object):
                                       self.gamma)[:-1]
       else:
         rewards = discount_with_dones(rewards, dones, self.gamma)
-      mb_rewards[n] = rewards
-    mb_rewards = mb_rewards.flatten()
+      mb_td_targets[n] = rewards
+    mb_td_targets = mb_td_targets.flatten()
     mb_base_actions = mb_base_actions.flatten()
     # mb_sub3_actions = mb_sub3_actions.flatten()
     # mb_sub4_actions = mb_sub4_actions.flatten()
@@ -684,7 +724,7 @@ class Runner(object):
 
     mb_values = mb_values.flatten()
     mb_masks = mb_masks.flatten()
-    return mb_obs, mb_states, mb_rewards, mb_masks, \
+    return mb_obs, mb_states, mb_td_targets, mb_masks, \
            mb_base_actions, mb_xy0, mb_xy1, mb_values
 
 
@@ -745,37 +785,61 @@ def learn(policy,
   tstart = time.time()
   #enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
   for update in range(1, total_timesteps // nbatch + 1):
-    obs, states, rewards, masks, actions, xy0, xy1, values = runner.run()
+    # print('iteration: %d' % update)
+    obs, states, td_targets, masks, actions, xy0, xy1, values = runner.run()
+    # print('values: %s' % values)
+
     policy_loss, value_loss, policy_entropy, \
     policy_loss_xy0, policy_entropy_xy0, \
     policy_loss_xy1, policy_entropy_xy1, \
-      = model.train(obs, states, rewards,
+      = model.train(obs, states, td_targets,
                     masks, actions,
                     xy0, xy1, values)
-
+  
     model.old_obs = obs
     nseconds = time.time() - tstart
     fps = int((update * nbatch) / nseconds)
     if update % log_interval == 0 or update == 1:
-      ev = explained_variance(values, rewards)
-      logger.record_tabular("nupdates", update)
-      logger.record_tabular("total_timesteps", update * nbatch)
-      logger.record_tabular("fps", fps)
-      logger.record_tabular("policy_entropy", float(policy_entropy))
-      logger.record_tabular("policy_loss", float(policy_loss))
+      ev = explained_variance(values, td_targets)
+      nsml.report(
+                    nupdates=update,
+                    total_timesteps=update * nbatch,
+                    fps=fps,
+                    policy_entropy=float(policy_entropy),
+                    policy_loss=float(policy_loss),
 
-      logger.record_tabular("policy_loss_xy0", float(policy_loss_xy0))
-      logger.record_tabular("policy_entropy_xy0",
-                            float(policy_entropy_xy0))
-      logger.record_tabular("policy_loss_xy1", float(policy_loss_xy1))
-      logger.record_tabular("policy_entropy_xy1",
-                            float(policy_entropy_xy1))
-      # logger.record_tabular("policy_loss_y0", float(policy_loss_y0))
-      # logger.record_tabular("policy_entropy_y0", float(policy_entropy_y0))
+                    policy_loss_xy0=float(policy_loss_xy0),
+                    policy_entropy_xy0=float(policy_entropy_xy0),
 
-      logger.record_tabular("value_loss", float(value_loss))
-      logger.record_tabular("explained_variance", float(ev))
-      logger.dump_tabular()
+                    policy_loss_xy1=float(policy_loss_xy1),
+                    policy_entropy_xy1=float(policy_entropy_xy1),
+
+                    value_loss=float(value_loss),
+                    explained_variance=float(ev),
+
+                    batch_size=nbatch,
+                    step=update * nbatch,
+
+                    scope=locals()
+                )
+      # logger.record_tabular("nupdates", update)
+      # logger.record_tabular("total_timesteps", update * nbatch)
+      # logger.record_tabular("fps", fps)
+      # logger.record_tabular("policy_entropy", float(policy_entropy))
+      # logger.record_tabular("policy_loss", float(policy_loss))
+
+      # logger.record_tabular("policy_loss_xy0", float(policy_loss_xy0))
+      # logger.record_tabular("policy_entropy_xy0",
+      #                       float(policy_entropy_xy0))
+      # logger.record_tabular("policy_loss_xy1", float(policy_loss_xy1))
+      # logger.record_tabular("policy_entropy_xy1",
+      #                       float(policy_entropy_xy1))
+      # # logger.record_tabular("policy_loss_y0", float(policy_loss_y0))
+      # # logger.record_tabular("policy_entropy_y0", float(policy_entropy_y0))
+
+      # logger.record_tabular("value_loss", float(value_loss))
+      # logger.record_tabular("explained_variance", float(ev))
+      # logger.dump_tabular()
 
     if save_interval and (update % save_interval == 0
                           or update == 1) and logger.get_dir():
