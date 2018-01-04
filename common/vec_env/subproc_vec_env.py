@@ -44,7 +44,7 @@ def worker(remote, map_name, i):
         #print("agent(",i," ) action : ", action2, " func : ", func, "xy :", action2[1][1])
         x, y = action2[1][1]
         move = True
-        if (x == -1 and y == -1):
+        if (x == 0 and y == 0):
           move = False
         result = env.step(actions=[action1])
         reward += result[0].reward
