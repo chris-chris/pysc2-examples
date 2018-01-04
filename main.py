@@ -168,7 +168,7 @@ def main():
 
         seed = 0
 
-        env = SubprocVecEnv(FLAGS.num_agents + FLAGS.num_scripts, FLAGS.map)
+        env = SubprocVecEnv(FLAGS.num_agents + FLAGS.num_scripts, FLAGS.num_scripts, FLAGS.map)
 
         policy_fn = CnnPolicy
         a2c.learn(

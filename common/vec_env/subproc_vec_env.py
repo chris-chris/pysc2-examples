@@ -11,7 +11,7 @@ _SELECTED = features.SCREEN_FEATURES.selected.index
 from common import common
 
 
-def worker(remote, map_name, i):
+def worker(remote, map_name, nscripts, i):
 
   with sc2_env.SC2Env(
       map_name=map_name,
@@ -44,8 +44,10 @@ def worker(remote, map_name, i):
         #print("agent(",i," ) action : ", action2, " func : ", func, "xy :", action2[1][1])
         x, y = action2[1][1]
         move = True
-        if (x == 0 and y == 0):
+
+        if (i < nscripts and x == 0 and y == 0):
           move = False
+
         result = env.step(actions=[action1])
         reward += result[0].reward
         done = result[0].step_type == environment.StepType.LAST
@@ -152,7 +154,7 @@ def worker(remote, map_name, i):
 
 
 class SubprocVecEnv(VecEnv):
-  def __init__(self, nenvs, map_name):
+  def __init__(self, nenvs, nscripts, map_name):
     """
 envs: list of gym environments to run in subprocesses
 """
@@ -163,7 +165,7 @@ envs: list of gym environments to run in subprocesses
     i = 0
     for (work_remote, ) in zip(self.work_remotes, ):
       self.ps.append(
-        Process(target=worker, args=(work_remote, map_name, i)))
+        Process(target=worker, args=(work_remote, map_name, nscripts, i)))
       i += 1
 
     #
