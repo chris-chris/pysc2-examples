@@ -33,7 +33,7 @@ _SELECT_ALL = 0
 
 def init(env, obs):
   player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
-  #print("init")
+  # print("init")
   army_count = env._obs[0].observation.player_common.army_count
 
   player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
@@ -103,20 +103,20 @@ def init(env, obs):
       group_list.append(group_id)
       group_id += 1
 
-  if (len(unit_xy_list) >= 1):
+  if len(unit_xy_list) >= 1:
     for idx, xy in enumerate(unit_xy_list):
-      if (idx == 0):
+      if idx == 0:
         obs = env.step(actions=[
-          sc2_actions.FunctionCall(_SELECT_POINT, [[0], xy])
+            sc2_actions.FunctionCall(_SELECT_POINT, [[0], xy])
         ])
       else:
         obs = env.step(actions=[
-          sc2_actions.FunctionCall(_SELECT_POINT, [[1], xy])
+            sc2_actions.FunctionCall(_SELECT_POINT, [[1], xy])
         ])
       last_xy = xy
 
     obs = env.step(actions=[
-      sc2_actions.FunctionCall(_SELECT_CONTROL_GROUP,
+        sc2_actions.FunctionCall(_SELECT_CONTROL_GROUP,
                                [[_CONTROL_GROUP_SET], [group_id]])
     ])
     xy_per_marine[str(group_id)] = last_xy
@@ -127,8 +127,14 @@ def init(env, obs):
   return obs, xy_per_marine
 
 
-def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
-              xy_per_marine):
+def solve_tsp(
+    player_relative, 
+    selected, 
+    group_list, 
+    group_id, 
+    dest_per_marine,
+    xy_per_marine):
+  
   my_dest = None
   other_dest = None
   closest, min_dist = None, None
@@ -137,16 +143,16 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
   player_y, player_x = (selected == 1).nonzero()
 
   #for group_id in group_list:
-  if ("0" in dest_per_marine and "1" in dest_per_marine):
-    if (group_id == 0):
+  if "0" in dest_per_marine and "1" in dest_per_marine:
+    if group_id == 0:
       my_dest = dest_per_marine["0"]
       other_dest = dest_per_marine["1"]
     else:
       my_dest = dest_per_marine["1"]
       other_dest = dest_per_marine["0"]
 
-  if (len(player_x) > 0):
-    if (group_id == 0):
+  if len(player_x) > 0:
+    if group_id == 0:
       xy_per_marine["1"] = [int(player_x.mean()), int(player_y.mean())]
     else:
       xy_per_marine["0"] = [int(player_x.mean()), int(player_y.mean())]
@@ -156,14 +162,14 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
 
     for p in zip(neutral_x, neutral_y):
 
-      if (other_dest):
+      if other_dest:
         dist = np.linalg.norm(np.array(other_dest) - np.array(p))
-        if (dist < 10):
+        if dist < 10:
           # print("continue since partner will take care of it ", p)
           continue
 
       pp = [p[0], p[1]]
-      if (pp not in points):
+      if pp not in points:
         points.append(pp)
 
       dist = np.linalg.norm(np.array(player) - np.array(p))
@@ -171,18 +177,18 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
         closest, min_dist = p, dist
 
     solve_tsp = False
-    if (my_dest):
+    if my_dest:
       dist = np.linalg.norm(np.array(player) - np.array(my_dest))
-      if (dist < 0.5):
+      if dist < 0.5:
         solve_tsp = True
 
-    if (my_dest is None):
+    if my_dest is None:
       solve_tsp = True
 
-    if (len(points) < 2):
+    if len(points) < 2:
       solve_tsp = False
 
-    if (solve_tsp):
+    if solve_tsp:
       # function for printing best found solution when it is found
       from time import clock
       init = clock()
@@ -191,35 +197,26 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
         print("cpu:%g\tobj:%g\ttour:%s" % \
               (clock(), obj, s))
 
-      #print("points: %s" % points)
       n, D = mk_matrix(points, distL2)
-      # multi-start local search
-      #print("random start local search:", n)
       niter = 50
       tour, z = multistart_localsearch(niter, n, D)
 
-      #print("best found solution (%d iterations): z = %g" % (niter, z))
-      #print(tour)
-
       left, right = None, None
       for idx in tour:
-        if (tour[idx] == 0):
-          if (idx == len(tour) - 1):
-            #print("optimal next : ", tour[0])
+        if tour[idx] == 0:
+          if idx == len(tour) - 1:
             right = points[tour[0]]
             left = points[tour[idx - 1]]
-          elif (idx == 0):
-            #print("optimal next : ", tour[idx+1])
+          elif idx == 0:
             right = points[tour[idx + 1]]
             left = points[tour[len(tour) - 1]]
           else:
-            #print("optimal next : ", tour[idx+1])
             right = points[tour[idx + 1]]
             left = points[tour[idx - 1]]
 
       left_d = np.linalg.norm(np.array(player) - np.array(left))
       right_d = np.linalg.norm(np.array(player) - np.array(right))
-      if (right_d > left_d):
+      if right_d > left_d:
         closest = left
       else:
         closest = right
@@ -229,32 +226,45 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
     #print("dest_per_marine", self.dest_per_marine)
     #dest_per_marine {'0': [56, 26], '1': [52, 6]}
 
-    if (closest):
-      if (group_id == 0):
+    if closest:
+      if group_id == 0:
         actions.append({
-          "base_action": group_id,
-          "x0": closest[0],
-          "y0": closest[1]
+            "base_action": group_id,
+            "x0": closest[0],
+            "y0": closest[1]
         })
       else:
         actions.append({
-          "base_action": group_id,
-          "x1": closest[0],
-          "y1": closest[1]
+            "base_action": group_id,
+            "x1": closest[0],
+            "y1": closest[1]
         })
 
-    elif (my_dest):
-      if (group_id == 0):
+    elif my_dest:
+      if group_id == 0:
         actions.append({
-          "base_action": group_id,
-          "x0": my_dest[0],
-          "y0": my_dest[1]
+            "base_action": group_id,
+            "x0": my_dest[0],
+            "y0": my_dest[1]
         })
       else:
         actions.append({
-          "base_action": group_id,
-          "x1": my_dest[0],
-          "y1": my_dest[1]
+            "base_action": group_id,
+            "x1": my_dest[0],
+            "y1": my_dest[1]
+        })
+    else:
+      if group_id == 0:
+        actions.append({
+            "base_action": 2,
+            "x0": 0,
+            "y0": 0
+        })
+      else:
+        actions.append({
+            "base_action": 2,
+            "x1": 0,
+            "y1": 0
         })
 
   # elif(len(group_list)>0):
@@ -262,15 +272,15 @@ def solve_tsp(player_relative, selected, group_list, group_id, dest_per_marine,
   #   group_id = random.randint(0,len(group_list)-1)
   #   actions.append({"base_action":group_id})
 
-  if (group_id == 0):
+  if group_id == 0:
     group_id = 1
   else:
     group_id = 0
 
-  if("0" not in xy_per_marine):
-    xy_per_marine["0"] = [0,0]
-  if("1" not in xy_per_marine):
-    xy_per_marine["1"] = [0,0]
+  if "0" not in xy_per_marine:
+    xy_per_marine["0"] = [0, 0]
+  if "1" not in xy_per_marine:
+    xy_per_marine["1"] = [0, 0]
 
   return actions, group_id, dest_per_marine, xy_per_marine
 

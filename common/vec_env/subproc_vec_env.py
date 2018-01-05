@@ -18,39 +18,41 @@ def worker(remote, map_name, nscripts, i):
       step_mul=1,
       screen_size_px=(32, 32),
       minimap_size_px=(32, 32)) as env:
-    available_actions = None
+    available_actions = []
     result = None
     group_list = []
     xy_per_marine = {}
     while True:
       cmd, data = remote.recv()
       if cmd == 'step':
-        # if(common.check_group_list(env, result)):
-        #   result, xy_per_marine = common.init(env,result)
-
         reward = 0
 
-        if (len(group_list) == 0
-            or common.check_group_list(env, result)):
+        if len(group_list) == 0 or common.check_group_list(env, result):
           print("init group list")
           result, xy_per_marine = common.init(env, result)
           group_list = common.update_group_list(result)
 
         action1 = data[0][0]
         action2 = data[0][1]
-        func = actions.FUNCTIONS[action1[0]]
+        # func = actions.FUNCTIONS[action1[0]]
         # print("agent(",i," ) action : ", action1, " func : ", func)
         func = actions.FUNCTIONS[action2[0]]
-        #print("agent(",i," ) action : ", action2, " func : ", func, "xy :", action2[1][1])
-        x, y = action2[1][1]
-        move = True
+        # print("agent(",i," ) action : ", action2, " func : ", func)
 
-        if (i < nscripts and x == 0 and y == 0):
-          move = False
 
         result = env.step(actions=[action1])
         reward += result[0].reward
         done = result[0].step_type == environment.StepType.LAST
+
+        move = True
+        
+        if len(action2[1]) == 2:
+          x, y = action2[1][1]
+          # print("x, y:", x, y)
+
+          # if x == 0 and y == 0:
+          #   move = False
+
         if (331 in available_actions and move and not done):
           try:
             result = env.step(actions=[action2])
@@ -60,61 +62,49 @@ def worker(remote, map_name, nscripts, i):
             print("e :", e)
 
         ob = (result[0].observation["screen"][
-              _PLAYER_RELATIVE:_PLAYER_RELATIVE + 1] == 3).astype(
-          int)  #  (1, 32, 32)
+            _PLAYER_RELATIVE:_PLAYER_RELATIVE + 1] == 3).astype(int)
+
+        #  (1, 32, 32)
         selected = result[0].observation["screen"][
-                   _SELECTED:_SELECTED + 1]  #  (1, 32, 32)
+            _SELECTED:_SELECTED + 1]  #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))
         control_groups = result[0].observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
-
-        # extra[0,0,0] = army_count
-        # for id, group in enumerate(control_groups):
-        #   control_group_id = id
-        #   unit_id = group[0]
-        #   count = group[1]
-        #   #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
-        #   extra[0,1, control_group_id] = unit_id
-        #   extra[0,2, control_group_id] = count
-        #ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
-        #ob = np.append(ob, extra, axis=0) # (3, 32, 32)
 
         available_actions = result[0].observation["available_actions"]
         info = result[0].observation["available_actions"]
         if done:
           result = env.reset()
 
-          if (len(group_list) == 0
-              or common.check_group_list(env, result)):
-            print("init group list")
+          if len(group_list) == 0 or common.check_group_list(env, result):
+            # print("init group list")
             result, xy_per_marine = common.init(env, result)
             group_list = common.update_group_list(result)
 
-          # ob = result[0].observation["screen"]
-          # reward = result[0].reward
-          # done = result[0].step_type == environment.StepType.LAST
           info = result[0].observation["available_actions"]
-        
-        group_id = action1[1][1][0]
-        # print("group_id:", group_id)
 
-        player_y, player_x = (result[0].observation["screen"][_SELECTED] == 1).nonzero()
+        if len(action1[1]) == 2:
 
-        if (len(player_x) > 0):
-          if (group_id == 1):
-            xy_per_marine["1"] = [int(player_x.mean()), int(player_y.mean())]
-          else:
-            xy_per_marine["0"] = [int(player_x.mean()), int(player_y.mean())]
-        
+          group_id = action1[1][1][0]
+
+          player_y, player_x = (result[0].observation["screen"][
+              _SELECTED] == 1).nonzero()
+
+          if len(player_x) > 0:
+            if (group_id == 1):
+              xy_per_marine["1"] = [int(player_x.mean()), int(player_y.mean())]
+            else:
+              xy_per_marine["0"] = [int(player_x.mean()), int(player_y.mean())]
+          
         remote.send((ob, reward, done, info, army_count,
                      control_groups, selected, xy_per_marine))
+
       elif cmd == 'reset':
         result = env.reset()
         reward = 0
 
-        if (len(group_list) == 0
-            or common.check_group_list(env, result)):
-          print("init group list")
+        if len(group_list) == 0 or common.check_group_list(env, result):
+          # print("init group list")
           result, xy_per_marine = common.init(env, result)
           group_list = common.update_group_list(result)
 
@@ -126,16 +116,6 @@ def worker(remote, map_name, nscripts, i):
         # extra = np.zeros((1, 32, 32))
         control_groups = result[0].observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
-        # extra[0,0,0] = army_count
-        # for id, group in enumerate(control_groups):
-        #   control_group_id = id
-        #   unit_id = group[0]
-        #   count = group[1]
-        #   #print("control_group_id :", control_group_id, " unit_id :", unit_id, " count :", count)
-        #   extra[0,1, control_group_id] = unit_id
-        #   extra[0,2, control_group_id] = count
-        # ob = np.append(ob, selected, axis=0) #  (2, 32, 32)
-        # ob = np.append(ob, extra, axis=0) # (3, 32, 32)
 
         done = result[0].step_type == environment.StepType.LAST
         info = result[0].observation["available_actions"]
