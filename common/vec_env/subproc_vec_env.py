@@ -15,7 +15,7 @@ def worker(remote, map_name, nscripts, i):
 
   with sc2_env.SC2Env(
       map_name=map_name,
-      step_mul=1,
+      step_mul=2,
       screen_size_px=(32, 32),
       minimap_size_px=(32, 32)) as env:
     available_actions = []
@@ -45,7 +45,7 @@ def worker(remote, map_name, nscripts, i):
         done = result[0].step_type == environment.StepType.LAST
 
         move = True
-        
+
         if len(action2[1]) == 2:
           x, y = action2[1][1]
           # print("x, y:", x, y)

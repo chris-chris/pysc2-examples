@@ -282,9 +282,9 @@ class Runner(object):
     self.states = model.initial_state
     self.dones = [False for _ in range(nenv)]
     self.total_reward = [0.0 for _ in range(nenv)]
-    self.episode_rewards = [0.0]
-    self.episode_rewards_script = [0.0]
-    self.episode_rewards_a2c = [0.0]
+    self.episode_rewards = []
+    self.episode_rewards_script = []
+    self.episode_rewards_a2c = []
     self.episodes = 0
     self.steps = 0
     self.callback = callback
@@ -304,9 +304,9 @@ class Runner(object):
     for env_num in range(self.nenv):
       # print("xy_per_marine: ", self.xy_per_marine)
       if "0" not in self.xy_per_marine[env_num]:
-        self.xy_per_marine[env_num]["0"] = [0,0]
+        self.xy_per_marine[env_num]["0"] = [0, 0]
       if "1" not in self.xy_per_marine[env_num]:
-        self.xy_per_marine[env_num]["1"] = [0,0]
+        self.xy_per_marine[env_num]["1"] = [0, 0]
 
       marine0 = self.xy_per_marine[env_num]["0"]
       marine1 = self.xy_per_marine[env_num]["1"]
@@ -369,7 +369,7 @@ class Runner(object):
   def construct_action(self, base_actions, base_action_spec, x0, y0, x1, y1):
     actions = []
     for env_num, spec in enumerate(base_action_spec):
-      #print("spec", spec.args)
+      # print("spec", spec.args)
       args = []
       # for arg_idx, arg in enumerate(spec.args):
       #   #print("arg", arg)
@@ -467,9 +467,9 @@ class Runner(object):
         player_relative = ob[:, :, -1]
 
         self.group_list[env_num] = common.update_group_list2(
-          self.control_groups[env_num])
+            self.control_groups[env_num])
 
-        if (len(self.action_queue[env_num]) == 0):
+        if len(self.action_queue[env_num]) == 0:
 
           self.action_queue[env_num], self.group_id[env_num], self.dest_per_marine[env_num], self.xy_per_marine[env_num] = \
             common.solve_tsp(player_relative,
@@ -520,7 +520,10 @@ class Runner(object):
       mb_dones.append(self.dones)
 
       #print("final acitons : ", actions)
-      obs, rewards, dones, available_actions, army_counts, control_groups, selected, xy_per_marine = self.env.step(
+      obs, rewards, dones,\
+      available_actions, army_counts,\
+      control_groups, selected, xy_per_marine\
+      = self.env.step(
           actions=actions)
       self.army_counts = army_counts
       self.control_groups = control_groups
@@ -531,6 +534,7 @@ class Runner(object):
 
       self.states = states
       self.dones = dones
+      mean_100ep_reward_a2c = 0
       for n, done in enumerate(dones):
         self.total_reward[n] += float(rewards[n])
         if done:
@@ -539,14 +543,14 @@ class Runner(object):
           num_episodes = self.episodes
           self.episode_rewards.append(self.total_reward[n])
 
+          model = self.model
           mean_100ep_reward = round(
-              np.mean(self.episode_rewards[-101:-1]), 1)
-
+              np.mean(self.episode_rewards[-101:]), 1)
           if (n < self.nscripts):  # scripted agents
             self.episode_rewards_script.append(
                 self.total_reward[n])
             mean_100ep_reward_script = round(
-                np.mean(self.episode_rewards_script[-101:-1]), 1)
+                np.mean(self.episode_rewards_script[-101:]), 1)
             nsml.report(
                 reward_script=self.total_reward[n],
                 mean_reward_script=mean_100ep_reward_script,
@@ -559,7 +563,7 @@ class Runner(object):
           else:
             self.episode_rewards_a2c.append(self.total_reward[n])
             mean_100ep_reward_a2c = round(
-                np.mean(self.episode_rewards_a2c[-101:-1]), 1)
+                np.mean(self.episode_rewards_a2c[-101:]), 1)
             nsml.report(
                 reward_a2c=self.total_reward[n],
                 mean_reward_a2c=mean_100ep_reward_a2c,
@@ -569,23 +573,21 @@ class Runner(object):
                 step=self.episodes,
                 scope=locals()
             )
+            print("mean_100ep_reward_a2c", mean_100ep_reward_a2c)
 
+          if self.callback is not None:
+            self.callback(locals(), globals())
           self.total_reward[n] = 0
           self.group_list[n] = []
 
-          model = self.model
-          if self.callback is not None:
-            self.callback(locals(), globals())
 
-      #print("rewards : ", rewards)
-      #print("self.total_reward :", self.total_reward)
       self.update_obs(obs)
       mb_td_targets.append(rewards)
     mb_dones.append(self.dones)
     #batch of steps to batch of rollouts
     mb_obs = np.asarray(
         mb_obs, dtype=np.uint8).swapaxes(1, 0).reshape(
-        self.batch_ob_shape)
+            self.batch_ob_shape)
     mb_td_targets = np.asarray(mb_td_targets, dtype=np.float32).swapaxes(1, 0)
     mb_base_actions = np.asarray(
         mb_base_actions, dtype=np.int32).swapaxes(1, 0)
@@ -612,22 +614,8 @@ class Runner(object):
       mb_td_targets[n] = rewards
     mb_td_targets = mb_td_targets.flatten()
     mb_base_actions = mb_base_actions.flatten()
-    # mb_sub3_actions = mb_sub3_actions.flatten()
-    # mb_sub4_actions = mb_sub4_actions.flatten()
-    # mb_sub5_actions = mb_sub5_actions.flatten()
-    # mb_sub6_actions = mb_sub6_actions.flatten()
-    # mb_sub7_actions = mb_sub7_actions.flatten()
-    # mb_sub8_actions = mb_sub8_actions.flatten()
-    # mb_sub9_actions = mb_sub9_actions.flatten()
-    # mb_sub10_actions = mb_sub10_actions.flatten()
-    # mb_sub11_actions = mb_sub11_actions.flatten()
-    # mb_sub12_actions = mb_sub12_actions.flatten()
     mb_xy0 = mb_xy0.flatten()
-    # mb_y0 = mb_y0.flatten()
     mb_xy1 = mb_xy1.flatten()
-    # mb_y1 = mb_y1.flatten()
-    # mb_x2 = mb_x2.flatten()
-    # mb_y2 = mb_y2.flatten()
 
     mb_values = mb_values.flatten()
     mb_masks = mb_masks.flatten()
@@ -660,7 +648,7 @@ def learn(policy,
   nenvs = nprocs
   ob_space = (32, 32, 3)  # env.observation_space
   ac_space = (32, 32)
-  make_model = lambda : Model(policy, ob_space, ac_space, nenvs,
+  make_model = lambda: Model(policy, ob_space, ac_space, nenvs,
                               total_timesteps,
                               nprocs=nprocs,
                               nscripts=nscripts,
@@ -681,16 +669,16 @@ def learn(policy,
   model = make_model()
   print("make_model complete!")
   runner = Runner(
-    env,
-    model,
-    nsteps=nsteps,
-    nscripts=nscripts,
-    nstack=nstack,
-    gamma=gamma,
-    callback=callback)
+      env,
+      model,
+      nsteps=nsteps,
+      nscripts=nscripts,
+      nstack=nstack,
+      gamma=gamma,
+      callback=callback)
   nbatch = nenvs * nsteps
   tstart = time.time()
-  #enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
+  # enqueue_threads = model.q_runner.create_threads(model.sess, coord=tf.train.Coordinator(), start=True)
   for update in range(1, total_timesteps // nbatch + 1):
     obs, states, td_targets, masks, actions, xy0, xy1, values = runner.run()
 
@@ -706,27 +694,27 @@ def learn(policy,
     fps = int((update * nbatch) / nseconds)
     if update % log_interval == 0 or update == 1:
       ev = explained_variance(values, td_targets)
-      nsml.report(
-          nupdates=update,
-          total_timesteps=update * nbatch,
-          fps=fps,
-          policy_entropy=float(policy_entropy),
-          policy_loss=float(policy_loss),
+      # nsml.report(
+      #     nupdates=update,
+      #     total_timesteps=update * nbatch,
+      #     fps=fps,
+      #     policy_entropy=float(policy_entropy),
+      #     policy_loss=float(policy_loss),
 
-          policy_loss_xy0=float(policy_loss_xy0),
-          policy_entropy_xy0=float(policy_entropy_xy0),
+      #     policy_loss_xy0=float(policy_loss_xy0),
+      #     policy_entropy_xy0=float(policy_entropy_xy0),
 
-          policy_loss_xy1=float(policy_loss_xy1),
-          policy_entropy_xy1=float(policy_entropy_xy1),
+      #     policy_loss_xy1=float(policy_loss_xy1),
+      #     policy_entropy_xy1=float(policy_entropy_xy1),
 
-          value_loss=float(value_loss),
-          explained_variance=float(ev),
+      #     value_loss=float(value_loss),
+      #     explained_variance=float(ev),
 
-          batch_size=nbatch,
-          step=update,
+      #     batch_size=nbatch,
+      #     step=update,
 
-          scope=locals()
-          )
+      #     scope=locals()
+      #     )
       # logger.record_tabular("nupdates", update)
       # logger.record_tabular("total_timesteps", update * nbatch)
       # logger.record_tabular("fps", fps)

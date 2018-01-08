@@ -39,7 +39,7 @@ class CnnPolicy(object):
         h = conv(
             tf.cast(X, tf.float32),
             'c1',
-            nf=16,
+            nf=32,
             rf=5,
             stride=1,
             init_scale=np.sqrt(2),
@@ -47,7 +47,7 @@ class CnnPolicy(object):
         h2 = conv(
             h,
             'c2',
-            nf=32,
+            nf=64,
             rf=3,
             stride=1,
             init_scale=np.sqrt(2),
