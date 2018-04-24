@@ -7,9 +7,9 @@ from baselines import logger
 
 from baselines.common import set_global_seeds, explained_variance
 
-from baselines.acktr.utils import discount_with_dones
-from baselines.acktr.utils import Scheduler, find_trainable_variables
-from baselines.acktr.utils import cat_entropy, mse
+from baselines.a2c.utils import discount_with_dones
+from baselines.a2c.utils import Scheduler, find_trainable_variables
+from baselines.a2c.utils import cat_entropy, mse
 # from a2c import kfac
 
 from pysc2.env import environment
