@@ -41,7 +41,7 @@ flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
 flags.DEFINE_boolean("dueling", True, "dueling")
 flags.DEFINE_float("lr", 0.0005, "Learning rate")
 flags.DEFINE_integer("num_agents", 4, "number of RL agents for A2C")
-flags.DEFINE_integer("num_scripts", 4, "number of script agents for A2C")
+flags.DEFINE_integer("num_scripts", 0, "number of script agents for A2C")
 flags.DEFINE_integer("nsteps", 20, "number of batch steps for A2C")
 
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))

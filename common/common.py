@@ -32,7 +32,7 @@ _SELECT_ALL = 0
 
 
 def init(env, obs):
-  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+  player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
   # print("init")
   army_count = env._obs[0].observation.player_common.army_count
 
@@ -463,7 +463,7 @@ def shift(direction, number, matrix):
 
 def select_marine(env, obs):
 
-  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+  player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
   screen = player_relative
 
   group_list = update_group_list(obs)
@@ -476,7 +476,7 @@ def select_marine(env, obs):
   #   obs = init(env, player_relative, obs)
   #   group_list = update_group_list(obs)
 
-  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+  player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
 
   friendly_y, friendly_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
 
@@ -504,7 +504,7 @@ def select_marine(env, obs):
       sc2_actions.FunctionCall(_SELECT_POINT, [[0], danger_closest])
     ])
 
-    selected = obs[0].observation["screen"][_SELECTED]
+    selected = obs[0].observation["feature_screen"][_SELECTED]
     player_y, player_x = (selected == _PLAYER_FRIENDLY).nonzero()
     if (len(player_y) > 0):
       player = [int(player_x.mean()), int(player_y.mean())]
@@ -514,7 +514,7 @@ def select_marine(env, obs):
       sc2_actions.FunctionCall(_SELECT_POINT, [[0], marine_closest])
     ])
 
-    selected = obs[0].observation["screen"][_SELECTED]
+    selected = obs[0].observation["feature_screen"][_SELECTED]
     player_y, player_x = (selected == _PLAYER_FRIENDLY).nonzero()
     if (len(player_y) > 0):
       player = [int(player_x.mean()), int(player_y.mean())]
@@ -537,7 +537,7 @@ def select_marine(env, obs):
         ], [int(group_id)]])
       ])
 
-      selected = obs[0].observation["screen"][_SELECTED]
+      selected = obs[0].observation["feature_screen"][_SELECTED]
       player_y, player_x = (selected == _PLAYER_FRIENDLY).nonzero()
       if (len(player_y) > 0):
         player = [int(player_x.mean()), int(player_y.mean())]
@@ -562,7 +562,7 @@ def select_marine(env, obs):
 
 def marine_action(env, obs, player, action):
 
-  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+  player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
 
   enemy_y, enemy_x = (player_relative == _PLAYER_HOSTILE).nonzero()
 
@@ -574,7 +574,7 @@ def marine_action(env, obs, player, action):
       if not min_dist or dist < min_dist:
         closest, min_dist = p, dist
 
-  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+  player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
   friendly_y, friendly_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
 
   closest_friend, min_dist_friend = None, None

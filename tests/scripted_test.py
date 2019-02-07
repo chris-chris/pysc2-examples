@@ -25,14 +25,22 @@ class TestScripted(utils.TestCase):
   steps = 2000
   step_mul = 1
 
+
   def test_defeat_zerglings(self):
+    agent_format = sc2_env.AgentInterfaceFormat(
+      feature_dimensions=sc2_env.Dimensions(
+        screen=(32,32),
+        minimap=(32,32),
+      )
+    )
     with sc2_env.SC2Env(
         map_name="DefeatZerglingsAndBanelings",
         step_mul=self.step_mul,
         visualize=True,
+        agent_interface_format=[agent_format],
         game_steps_per_episode=self.steps * self.step_mul) as env:
       obs = env.step(actions=[sc2_actions.FunctionCall(_NO_OP, [])])
-      player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+      player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
 
       # Break Point!!
       print(player_relative)

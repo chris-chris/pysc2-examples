@@ -13,11 +13,17 @@ from common import common
 
 def worker(remote, map_name, nscripts, i):
 
+  agent_format = sc2_env.AgentInterfaceFormat(
+      feature_dimensions=sc2_env.Dimensions(
+          screen=(32,32),
+          minimap=(32,32)
+      )
+  )
+
   with sc2_env.SC2Env(
+      agent_interface_format=[agent_format],
       map_name=map_name,
-      step_mul=2,
-      screen_size_px=(32, 32),
-      minimap_size_px=(32, 32)) as env:
+      step_mul=2) as env:
     available_actions = []
     result = None
     group_list = []
@@ -61,11 +67,10 @@ def worker(remote, map_name, nscripts, i):
           except Exception as e:
             print("e :", e)
 
-        ob = (result[0].observation["screen"][
+        ob = (result[0].observation["feature_screen"][
             _PLAYER_RELATIVE:_PLAYER_RELATIVE + 1] == 3).astype(int)
-
         #  (1, 32, 32)
-        selected = result[0].observation["screen"][
+        selected = result[0].observation["feature_screen"][
             _SELECTED:_SELECTED + 1]  #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))
         control_groups = result[0].observation["control_groups"]
@@ -87,7 +92,7 @@ def worker(remote, map_name, nscripts, i):
 
           group_id = action1[1][1][0]
 
-          player_y, player_x = (result[0].observation["screen"][
+          player_y, player_x = (result[0].observation["feature_screen"][
               _SELECTED] == 1).nonzero()
 
           if len(player_x) > 0:
@@ -108,27 +113,31 @@ def worker(remote, map_name, nscripts, i):
           result, xy_per_marine = common.init(env, result)
           group_list = common.update_group_list(result)
 
-        reward += result[0].reward
-        ob = (result[0].observation["screen"][
+        time_step = result[0]
+        reward += time_step.reward
+        ob = (time_step.observation["feature_screen"][
               _PLAYER_RELATIVE:_PLAYER_RELATIVE + 1] == 3).astype(int)
-        selected = result[0].observation["screen"][
+
+        selected = time_step.observation["feature_screen"][
                    _SELECTED:_SELECTED + 1]  #  (1, 32, 32)
         # extra = np.zeros((1, 32, 32))
-        control_groups = result[0].observation["control_groups"]
+        control_groups = time_step.observation["control_groups"]
         army_count = env._obs[0].observation.player_common.army_count
 
-        done = result[0].step_type == environment.StepType.LAST
-        info = result[0].observation["available_actions"]
-        available_actions = result[0].observation["available_actions"]
+        done = time_step.step_type == environment.StepType.LAST
+        info = time_step.observation["available_actions"]
+        available_actions = time_step.observation["available_actions"]
         remote.send((ob, reward, done, info, army_count,
                      control_groups, selected, xy_per_marine))
       elif cmd == 'close':
         remote.close()
         break
       elif cmd == 'get_spaces':
-        remote.send((env.action_spec().functions[data], ""))
+        spec = env.action_spec()[0]
+        remote.send((spec.functions[data], ""))
       elif cmd == "action_spec":
-        remote.send((env.action_spec().functions[data]))
+        spec = env.action_spec()[0]
+        remote.send((spec.functions[data]))
       else:
         raise NotImplementedError
 
@@ -164,9 +173,11 @@ envs: list of gym environments to run in subprocesses
     results = [remote.recv() for remote in self.remotes]
     obs, rews, dones, infos, army_counts, control_groups, selected, xy_per_marine = zip(
       *results)
-    return np.stack(obs), np.stack(rews), np.stack(
-      dones), infos, army_counts, control_groups, np.stack(
-      selected), xy_per_marine
+    obs = [np.array(o) for o in obs]
+    selected = [np.array(o) for o in selected]
+    return (np.stack(obs), np.stack(rews), np.stack(dones),
+      infos, army_counts, control_groups, np.stack(selected),
+      xy_per_marine)
 
   def reset(self):
     for remote in self.remotes:
@@ -174,9 +185,11 @@ envs: list of gym environments to run in subprocesses
     results = [remote.recv() for remote in self.remotes]
     obs, rews, dones, infos, army_counts, control_groups, selected, xy_per_marine = zip(
       *results)
-    return np.stack(obs), np.stack(rews), np.stack(
-      dones), infos, army_counts, control_groups, np.stack(
-      selected), xy_per_marine
+    obs = [np.array(o) for o in obs]
+    selected = [np.array(o) for o in selected]
+    return (np.stack(obs), np.stack(rews), np.stack(dones),
+      infos, army_counts, control_groups, np.stack(selected),
+      xy_per_marine)
 
   def action_spec(self, base_actions):
     for remote, base_action in zip(self.remotes, base_actions):
