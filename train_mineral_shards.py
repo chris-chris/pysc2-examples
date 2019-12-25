@@ -3,6 +3,7 @@ import os
 
 from absl import flags
 from baselines import deepq
+from baselines_legacy import mlp, cnn_to_mlp
 from pysc2.env import sc2_env
 from pysc2.lib import actions
 import os
@@ -100,14 +101,17 @@ def main():
 
   if (FLAGS.algorithm == "deepq"):
 
+    AGENT_INTERFACE_FORMAT = sc2_env.AgentInterfaceFormat(feature_dimensions=sc2_env.Dimensions(screen=16, minimap=16))
+    # temp solution - sc2_env.Agent(sc2_env.Race.terran) might be too restricting
+    # We need this change because sc2 now requires specifying players.
     with sc2_env.SC2Env(
         map_name="CollectMineralShards",
+        players=[sc2_env.Agent(sc2_env.Race.terran)],
         step_mul=step_mul,
         visualize=True,
-        screen_size_px=(16, 16),
-        minimap_size_px=(16, 16)) as env:
+        agent_interface_format=AGENT_INTERFACE_FORMAT) as env:
 
-      model = deepq.models.cnn_to_mlp(
+      model = cnn_to_mlp(
         convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
 
       act = deepq_mineral_shards.learn(
@@ -129,14 +133,14 @@ def main():
 
   elif (FLAGS.algorithm == "deepq-4way"):
 
+    AGENT_INTERFACE_FORMAT = sc2_env.AgentInterfaceFormat(feature_dimensions=sc2_env.Dimensions(screen=32, minimap=32))
     with sc2_env.SC2Env(
         map_name="CollectMineralShards",
         step_mul=step_mul,
-        screen_size_px=(32, 32),
-        minimap_size_px=(32, 32),
+        agent_interface_format=AGENT_INTERFACE_FORMAT,
         visualize=True) as env:
 
-      model = deepq.models.cnn_to_mlp(
+      model = cnn_to_mlp(
         convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
 
       act = deepq_mineral_4way.learn(

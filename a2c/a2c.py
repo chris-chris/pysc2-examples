@@ -9,7 +9,7 @@ from baselines.common import set_global_seeds, explained_variance
 
 from baselines.a2c.utils import discount_with_dones
 from baselines.a2c.utils import Scheduler, find_trainable_variables
-from baselines.a2c.utils import cat_entropy, mse
+from baselines.a2c.utils import cat_entropy
 # from a2c import kfac
 
 from pysc2.env import environment
@@ -23,6 +23,9 @@ _CONTROL_GROUP_RECALL = 0
 _NOT_QUEUED = 0
 
 # np.set_printoptions(threshold=np.inf)
+
+def mse(pred, target):
+  return tf.square(pred-target)/2.
 
 class Model(object):
   def __init__(self,
