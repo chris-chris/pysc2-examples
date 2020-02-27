@@ -13,6 +13,7 @@ from baselines import logger
 from baselines.common.schedules import LinearSchedule
 from baselines import deepq
 from baselines.deepq.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
+from baselines_legacy import BatchInput
 
 from pysc2.lib import actions as sc2_actions
 from pysc2.env import environment
@@ -190,7 +191,7 @@ def learn(env,
   sess.__enter__()
 
   def make_obs_ph(name):
-    return U.BatchInput((16, 16), name=name)
+    return BatchInput((1, 16, 16), name=name)
 
   act_x, train_x, update_target_x, debug_x = deepq.build_train(
     make_obs_ph=make_obs_ph,
@@ -255,7 +256,7 @@ def learn(env,
   # Select all marines first
   obs = env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
 
-  player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+  player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
 
   screen = (player_relative == _PLAYER_NEUTRAL).astype(int) #+ path_memory
 
@@ -291,9 +292,9 @@ def learn(env,
         kwargs['update_param_noise_threshold'] = update_param_noise_threshold
         kwargs['update_param_noise_scale'] = True
 
-      action_x = act_x(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
+      action_x = act_x(np.expand_dims(np.array(screen)[None], axis=0), update_eps=update_eps, **kwargs)[0]
 
-      action_y = act_y(np.array(screen)[None], update_eps=update_eps, **kwargs)[0]
+      action_y = act_y(np.expand_dims(np.array(screen)[None], axis=0), update_eps=update_eps, **kwargs)[0]
 
       reset = False
 
@@ -313,10 +314,15 @@ def learn(env,
 
       obs = env.step(actions=new_action)
 
-      player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+      player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
       new_screen = (player_relative == _PLAYER_NEUTRAL).astype(int)
 
       player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
+      # resolve the cannot convert float NaN to integer issue
+      if len(player_x) == 0:
+        player_x = np.array([0])
+      if len(player_y) == 0:
+        player_y = np.array([0])
       player = [int(player_x.mean()), int(player_y.mean())]
 
       rew = obs[0].reward
@@ -334,7 +340,7 @@ def learn(env,
 
       if done:
         obs = env.reset()
-        player_relative = obs[0].observation["screen"][_PLAYER_RELATIVE]
+        player_relative = obs[0].observation["feature_screen"][_PLAYER_RELATIVE]
         screent = (player_relative == _PLAYER_NEUTRAL).astype(int)
 
         player_y, player_x = (player_relative == _PLAYER_FRIENDLY).nonzero()
@@ -364,9 +370,9 @@ def learn(env,
           obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y = replay_buffer_y.sample(batch_size)
           weights_y, batch_idxes_y = np.ones_like(rewards_y), None
 
-        td_errors_x = train_x(obses_t_x, actions_x, rewards_x, obses_tp1_x, dones_x, weights_x)
+        td_errors_x = train_x(np.expand_dims(obses_t_x, axis=1), actions_x, rewards_x, np.expand_dims(obses_tp1_x, axis=1), dones_x, weights_x)
 
-        td_errors_y = train_x(obses_t_y, actions_y, rewards_y, obses_tp1_y, dones_y, weights_y)
+        td_errors_y = train_x(np.expand_dims(obses_t_y, axis=1), actions_y, rewards_y, np.expand_dims(obses_tp1_y, axis=1), dones_y, weights_y)
 
 
         if prioritized_replay:

@@ -4,6 +4,7 @@ from absl import flags
 import baselines.common.tf_util as U
 import numpy as np
 from baselines import deepq
+from baselines_legacy import cnn_to_mlp, BatchInput
 from pysc2.env import environment
 from pysc2.env import sc2_env
 from pysc2.lib import actions
@@ -31,26 +32,38 @@ FLAGS = flags.FLAGS
 
 def main():
   FLAGS(sys.argv)
+  AGENT_INTERFACE_FORMAT = sc2_env.AgentInterfaceFormat(feature_dimensions=sc2_env.Dimensions(screen=16, minimap=16))
   with sc2_env.SC2Env(
       map_name="CollectMineralShards",
+      players=[sc2_env.Agent(sc2_env.Race.terran)],
       step_mul=step_mul,
       visualize=True,
-      game_steps_per_episode=steps * step_mul) as env:
+      agent_interface_format=AGENT_INTERFACE_FORMAT) as env:
 
-    model = deepq.models.cnn_to_mlp(
-      convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
-      hiddens=[256],
-      dueling=True)
+    # model = cnn_to_mlp(
+    #   convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
+    #   hiddens=[256],
+    #   dueling=True)
+
+    # def make_obs_ph(name):
+    #   return BatchInput((1, 64, 64), name=name)
+
+    model = cnn_to_mlp(
+      convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
 
     def make_obs_ph(name):
-      return U.BatchInput((64, 64), name=name)
+      return BatchInput((1, 16, 16), name=name)
 
+    # Using deepq_x here instead of deepq for agent x
     act_params = {
       'make_obs_ph': make_obs_ph,
       'q_func': model,
-      'num_actions': 4,
+      'num_actions': 16,
+      'scope': "deepq_x"
     }
 
+    # This needs to be the saved model for deepq_x
+    # You can change the scope to deepq_y for agent y
     act = deepq_mineral_shards.load(
       "mineral_shards.pkl", act_params=act_params)
 
@@ -67,7 +80,7 @@ def main():
 
       while not done:
 
-        player_relative = step_result[0].observation["screen"][
+        player_relative = step_result[0].observation["feature_screen"][
           _PLAYER_RELATIVE]
 
         obs = player_relative
@@ -86,7 +99,7 @@ def main():
         elif (player[1] < 32):
           obs = shift(DOWN, 32 - player[1], obs)
 
-        action = act(obs[None])[0]
+        action = act(np.expand_dims(obs[None], axis=0))[0]
         coord = [player[0], player[1]]
 
         if (action == 0):  #UP
