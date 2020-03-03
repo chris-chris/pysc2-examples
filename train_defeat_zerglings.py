@@ -6,9 +6,9 @@ from absl import flags
 from baselines import deepq
 from pysc2.env import sc2_env
 from pysc2.lib import actions
+from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
 from defeat_zerglings import dqfd
-from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
@@ -101,8 +101,9 @@ def main():
     )
     act.save("defeat_zerglings.pkl")
 
+
 def deepq_callback(locals, globals):
-  #pprint.pprint(locals)
+
   global max_mean_reward, last_filename
   if('done' in locals and locals['done'] == True):
     if('mean_100ep_reward' in locals
