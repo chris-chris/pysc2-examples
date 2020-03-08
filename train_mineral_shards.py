@@ -1,19 +1,19 @@
-import sys
-import os
 import datetime
+import os
 import random
-from absl import flags
+import sys
 
+from absl import flags
+from baselines.logger import HumanOutputFormat, Logger, TensorBoardOutputFormat
 from pysc2.env import sc2_env
 from pysc2.lib import actions
-from baselines_legacy import cnn_to_mlp
-from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
-from common.vec_env.subproc_vec_env import SubprocVecEnv
-from a2c.policies import CnnPolicy
-from a2c import a2c
 import deepq_mineral_4way
 import deepq_mineral_shards
+from a2c import a2c
+from a2c.policies import CnnPolicy
+from baselines_legacy import cnn_to_mlp
+from common.vec_env.subproc_vec_env import SubprocVecEnv
 
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id

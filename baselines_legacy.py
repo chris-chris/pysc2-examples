@@ -1,4 +1,4 @@
-import tensorflow.contrib.layers as layers
+import tensorflow.layers as layers
 import tensorflow as tf
 
 import os

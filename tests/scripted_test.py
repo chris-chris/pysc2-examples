@@ -4,16 +4,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from pysc2.agents import random_agent
-from pysc2.env import run_loop
-from pysc2.env import sc2_env
-from pysc2.tests import utils
-from pysc2.lib import actions as sc2_actions
-from pysc2.lib import features
+import sys
 
 from absl import flags
 from absl.testing import absltest
-import sys
+from pysc2.agents import random_agent
+from pysc2.env import run_loop
+from pysc2.env import sc2_env
+from pysc2.lib import actions as sc2_actions
+from pysc2.lib import features
+from pysc2.tests import utils
 
 _NO_OP = sc2_actions.FUNCTIONS.no_op.id
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index

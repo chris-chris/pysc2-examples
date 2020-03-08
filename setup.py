@@ -1,4 +1,4 @@
-"""NSML Example for StarCraft 2
+"""Example for StarCraft 2
 =====================================
 
 
@@ -10,9 +10,9 @@ automatically in the documentation.
 
 from distutils.core import setup
 setup(
-    name='nsml StarCraft2 MineralShards',
+    name='StarCraft2 MineralShards',
     version='0.1',
-    description='NSML StarCraft2 CollectMineralShards',
+    description='StarCraft2 CollectMineralShards',
     install_requires=[
         'visdom',
         'pillow',

@@ -17,8 +17,6 @@ from pysc2.lib import actions as sc2_actions
 
 from common import common
 
-import nsml
-
 _CONTROL_GROUP_RECALL = 0
 _NOT_QUEUED = 0
 

@@ -1,10 +1,7 @@
 import sys
 
-from absl import flags
-import baselines.common.tf_util as U
 import numpy as np
-from baselines import deepq
-from baselines_legacy import cnn_to_mlp, BatchInput
+from absl import flags
 from pysc2.env import environment
 from pysc2.env import sc2_env
 from pysc2.lib import actions
@@ -12,6 +9,7 @@ from pysc2.lib import actions as sc2_actions
 from pysc2.lib import features
 
 import deepq_mineral_shards
+from baselines_legacy import BatchInput, cnn_to_mlp
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _PLAYER_FRIENDLY = 1
@@ -32,7 +30,8 @@ FLAGS = flags.FLAGS
 
 def main():
   FLAGS(sys.argv)
-  AGENT_INTERFACE_FORMAT = sc2_env.AgentInterfaceFormat(feature_dimensions=sc2_env.Dimensions(screen=16, minimap=16))
+  AGENT_INTERFACE_FORMAT = sc2_env.AgentInterfaceFormat(
+    feature_dimensions=sc2_env.Dimensions(screen=16, minimap=16))
   with sc2_env.SC2Env(
       map_name="CollectMineralShards",
       players=[sc2_env.Agent(sc2_env.Race.terran)],
@@ -49,7 +48,7 @@ def main():
     #   return BatchInput((1, 64, 64), name=name)
 
     model = cnn_to_mlp(
-      convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
+        convs=[(16, 8, 4), (32, 4, 2)], hiddens=[256], dueling=True)
 
     def make_obs_ph(name):
       return BatchInput((1, 16, 16), name=name)
@@ -65,7 +64,7 @@ def main():
     # This needs to be the saved model for deepq_x
     # You can change the scope to deepq_y for agent y
     act = deepq_mineral_shards.load(
-      "mineral_shards.pkl", act_params=act_params)
+        "mineral_shards.pkl", act_params=act_params)
 
     while True:
 
@@ -86,7 +85,7 @@ def main():
         obs = player_relative
 
         player_y, player_x = (
-          player_relative == _PLAYER_FRIENDLY).nonzero()
+            player_relative == _PLAYER_FRIENDLY).nonzero()
         player = [int(player_x.mean()), int(player_y.mean())]
 
         if (player[0] > 32):
@@ -102,28 +101,28 @@ def main():
         action = act(np.expand_dims(obs[None], axis=0))[0]
         coord = [player[0], player[1]]
 
-        if (action == 0):  #UP
+        if (action == 0):  # UP
 
           if (player[1] >= 16):
             coord = [player[0], player[1] - 16]
           elif (player[1] > 0):
             coord = [player[0], 0]
 
-        elif (action == 1):  #DOWN
+        elif (action == 1):  # DOWN
 
           if (player[1] <= 47):
             coord = [player[0], player[1] + 16]
           elif (player[1] > 47):
             coord = [player[0], 63]
 
-        elif (action == 2):  #LEFT
+        elif (action == 2):  # LEFT
 
           if (player[0] >= 16):
             coord = [player[0] - 16, player[1]]
           elif (player[0] < 16):
             coord = [0, player[1]]
 
-        elif (action == 3):  #RIGHT
+        elif (action == 3):  # RIGHT
 
           if (player[0] <= 47):
             coord = [player[0] + 16, player[1]]
