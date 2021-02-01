@@ -23,6 +23,7 @@ def worker(remote, map_name, nscripts, i):
   with sc2_env.SC2Env(
       agent_interface_format=[agent_format],
       map_name=map_name,
+      players=[sc2_env.Agent(sc2_env.Race.terran)],
       step_mul=2) as env:
     available_actions = []
     result = None
