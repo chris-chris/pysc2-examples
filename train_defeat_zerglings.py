@@ -1,3 +1,4 @@
+import pprint
 import sys
 import os
 import datetime
@@ -7,6 +8,7 @@ from baselines import deepq
 from pysc2.env import sc2_env
 from pysc2.lib import actions
 from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
+from baselines_legacy import cnn_to_mlp
 
 from defeat_zerglings import dqfd
 
@@ -75,9 +77,11 @@ def main():
       map_name="DefeatZerglingsAndBanelings",
       step_mul=step_mul,
       visualize=True,
-      game_steps_per_episode=steps * step_mul) as env:
+      game_steps_per_episode=steps * step_mul,
+      agent_interface_format=sc2_env.AgentInterfaceFormat(
+        feature_dimensions=sc2_env.Dimensions(screen=32, minimap=32))) as env:
 
-    model = deepq.models.cnn_to_mlp(
+    model = cnn_to_mlp(
       convs=[(32, 8, 4), (64, 4, 2), (64, 3, 1)],
       hiddens=[256],
       dueling=True
@@ -88,13 +92,13 @@ def main():
       q_func=model,
       num_actions=3,
       lr=1e-4,
-      max_timesteps=10000000,
-      buffer_size=100000,
+      max_timesteps=1000000,
+      buffer_size=10000,
       exploration_fraction=0.5,
       exploration_final_eps=0.01,
       train_freq=2,
-      learning_starts=100000,
-      target_network_update_freq=1000,
+      learning_starts=10000,
+      target_network_update_freq=100,
       gamma=0.99,
       prioritized_replay=True,
       callback=deepq_callback
@@ -137,7 +141,7 @@ def deepq_callback(locals, globals):
 
 def acktr_callback(locals, globals):
   global max_mean_reward, last_filename
-  #pprint.pprint(locals)
+  pprint.pprint(locals)
 
   if('mean_100ep_reward' in locals
      and locals['num_episodes'] >= 10

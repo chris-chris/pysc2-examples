@@ -6,7 +6,7 @@ from absl import flags
 
 from pysc2.env import sc2_env
 from pysc2.lib import actions
-from baselines_legacy import cnn_to_mlp
+from baselines_legacy import cnn_to_mlp, BatchInput
 from baselines.logger import Logger, TensorBoardOutputFormat, HumanOutputFormat
 
 from common.vec_env.subproc_vec_env import SubprocVecEnv
@@ -33,7 +33,7 @@ flags.DEFINE_float("exploration_fraction", 0.5, "Exploration Fraction")
 flags.DEFINE_boolean("prioritized", True, "prioritized_replay")
 flags.DEFINE_boolean("dueling", True, "dueling")
 flags.DEFINE_float("lr", 0.0005, "Learning rate")
-flags.DEFINE_integer("num_agents", 4, "number of RL agents for A2C")
+flags.DEFINE_integer("num_agents", 6, "number of RL agents for A2C")
 flags.DEFINE_integer("num_scripts", 0, "number of script agents for A2C")
 flags.DEFINE_integer("nsteps", 20, "number of batch steps for A2C")
 
@@ -183,8 +183,7 @@ def deepq_callback(locals, globals):
 
   global max_mean_reward, last_filename
   if 'done' in locals and locals['done'] == True:
-    if 'mean_100ep_reward' in locals and locals['num_episodes'] >= 10\
-        and locals['mean_100ep_reward'] > max_mean_reward:
+    if 'mean_100ep_reward' in locals and locals['num_episodes'] >= 10 and locals['mean_100ep_reward'] > max_mean_reward:
       print("mean_100ep_reward : %s max_mean_reward : %s" %
             (locals['mean_100ep_reward'], max_mean_reward))
 
@@ -258,8 +257,7 @@ def deepq_4way_callback(locals, globals):
 def a2c_callback(locals, globals):
   global max_mean_reward, last_filename
 
-  if 'mean_100ep_reward' in locals and locals['num_episodes'] >= 10\
-      and locals['mean_100ep_reward'] > max_mean_reward:
+  if 'mean_100ep_reward' in locals and locals['num_episodes'] >= 10 and locals['mean_100ep_reward'] > max_mean_reward:
     print("mean_100ep_reward : %s max_mean_reward : %s" %
           (locals['mean_100ep_reward'], max_mean_reward))
 
@@ -280,9 +278,7 @@ def a2c_callback(locals, globals):
     max_mean_reward = locals['mean_100ep_reward']
     model = locals['model']
 
-    filename = os.path.join(
-        PROJ_DIR,
-        'models/a2c/mineral_%s.pkl' % locals['mean_100ep_reward'])
+    filename = os.path.join(PROJ_DIR, 'models/a2c/mineral_%s.pkl' % locals['mean_100ep_reward'])
     model.save(filename)
     print("save best mean_100ep_reward model to %s" % filename)
     last_filename = filename

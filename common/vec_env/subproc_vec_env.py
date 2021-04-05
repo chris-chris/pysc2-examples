@@ -21,6 +21,7 @@ def worker(remote, map_name, nscripts, i):
   )
 
   with sc2_env.SC2Env(
+      players=[sc2_env.Agent(sc2_env.Race.terran)],
       agent_interface_format=[agent_format],
       map_name=map_name,
       step_mul=2) as env:
@@ -40,7 +41,7 @@ def worker(remote, map_name, nscripts, i):
 
         action1 = data[0][0]
         action2 = data[0][1]
-        # func = actions.FUNCTIONS[action1[0]]
+        func = actions.FUNCTIONS[action1[0]]
         # print("agent(",i," ) action : ", action1, " func : ", func)
         func = actions.FUNCTIONS[action2[0]]
         # print("agent(",i," ) action : ", action2, " func : ", func)
@@ -56,8 +57,8 @@ def worker(remote, map_name, nscripts, i):
           x, y = action2[1][1]
           # print("x, y:", x, y)
 
-          # if x == 0 and y == 0:
-          #   move = False
+          if x == 0 and y == 0:
+            move = False
 
         if (331 in available_actions and move and not done):
           try:

@@ -327,7 +327,7 @@ def learn(env,
 
       rew = obs[0].reward
 
-      done = obs[0].step_type == environment.StepType.LAST
+      done = obs[0].step_type == environment.StepType.LAST or obs[0].step_type == environment.StepType.FIRST
 
       # Store transition in the replay buffer.
       replay_buffer_x.add(screen, action_x, rew, new_screen, float(done))
@@ -349,7 +349,6 @@ def learn(env,
         # Select all marines first
         env.step(actions=[sc2_actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])])
         episode_rewards.append(0.0)
-        #episode_minerals.append(0.0)
 
         reset = True
 
